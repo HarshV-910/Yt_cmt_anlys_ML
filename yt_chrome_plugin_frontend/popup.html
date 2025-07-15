@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Comment Analyzer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      background-color: #181c1f;
+      color: #f1f1f1;
+      margin: 0;
+      box-sizing: border-box;
+      width: 340px;
+      overflow-x: hidden;
+    }
+    h1 {
+      font-size: 20px;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .section {
+      margin-bottom: 15px;
+    }
+    .section-title {
+      font-weight: bold;
+      color: #0099ff;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    .metrics-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .metric {
+      width: 48%;
+      background-color: #222;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .metric-title {
+      font-size: 12px;
+      color: #cccccc;
+    }
+    .metric-value {
+      font-size: 22px;
+      font-weight: bold;
+      color: #ffffff;
+      margin-top: 5px;
+    }
+    .feature-btns {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .feature-btn {
+      background: #222;
+      color: #fff;
+      border: 1px solid #0099ff;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .feature-btn:hover {
+      background: #0099ff;
+      color: #fff;
+    }
+    .graph-img {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 6px;
+      background: #222;
+      padding: 6px;
+    }
+    .comment-list {
+      list-style: none;
+      padding: 0;
+    }
+    .comment-item {
+      margin: 8px 0;
+      padding: 8px;
+      background-color: #444;
+      border-radius: 4px;
+    }
+    .comment-sentiment {
+      font-weight: bold;
+      color: #ffffff;
+    }
+    #export-status {
+      color: #00e676;
+      font-size: 13px;
+      margin-top: 4px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>YouTube Comment Analyzer</h1>
+  <div id="output" class="section"></div>
+  <div class="feature-btns" id="feature-btns"></div>
+  <div id="graph-sections"></div>
+  <span id="export-status"></span>
+  <script src="popup.js"></script>
+</body>
+</html>
+
+
+
+
+ <!-- <!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Comment Analyzer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #1e1e1e; /* Dark gray background */
+      color: #f1f1f1;
+      width: 340px;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    .container {
+      background-color: #f2f2f2; /* Off-white container */
+      color: hsl(0, 0%, 7%);
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 20px;
+      color: #111;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .section {
+      margin-bottom: 15px;
+    }
+
+    .section-title {
+      font-weight: bold;
+      color: #0772ba;
+      margin-top: 10px;
+      margin-left: 12px;
+      font-size: 16px;
+    }
+    .section-title p {
+      color: #014d7f;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    
+    .some-info {
+      color: #585858;
+      font-size: 14px;
+      margin-top: 5px;
+      margin-left: 13px;
+    }
+
+    .metrics-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .metric {
+      width: 48%;
+      background-color: #ffffff;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      box-sizing: border-box;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .metric-title {
+      font-size: 12px;
+      color: #555;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #111;
+      margin-top: 5px;
+    }
+
+    .feature-btns {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .feature-btn {
+      background: #ffffff;
+      color: #007acc;
+      border: 1px solid #007acc;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.25s ease;
+    }
+
+    .feature-btn:hover {
+      background: #007acc;
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    .graph-img {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 6px;
+      background: #ffffff; /* White background for images */
+      padding: 6px;
+    }
+
+    .comment-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .comment-item {
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #ffffff;
+      line-height: 1.4;
+    }
+
+    .comment-positive {
+      background: linear-gradient(to right, #0f5132, #198754); /* dark green */
+    }
+
+    .comment-neutral {
+      background: linear-gradient(to right, #6c757d, #adb5bd); /* gray */
+    }
+
+    .comment-negative {
+      background: linear-gradient(to right, #842029, #dc3545); /* red */
+    }
+
+    .comment-sentiment {
+      display: block;
+      margin-top: 5px;
+      font-weight: bold;
+      color: #f8f9fa;
+    }
+
+    #export-status {
+      color: #00e676;
+      font-size: 13px;
+      margin-top: 4px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>YouTube Comment Analyzer</h1>
+    <div id="output" class="section"></div>
+    <div class="feature-btns" id="feature-btns"></div>
+    <div id="graph-sections"></div>
+    <span id="export-status"></span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> -->
