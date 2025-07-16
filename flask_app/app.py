@@ -13,6 +13,8 @@ from wordcloud import WordCloud
 from io import BytesIO
 import uuid
 import random
+from youtube_transcript_api import YouTubeTranscriptApi
+import google.generativeai as genai
 
 # -----------------------------------------------------------------------------
 # Flask App Initialization
@@ -52,54 +54,62 @@ stop_words = set(stopwords.words('english')) - words_to_keep
 url_pattern = re.compile(r'https?://\S+|www\.\S+')
 
 # -----------------------------------------------------------------------------
-# Utility Functions
+# load model and vectorizer
 # -----------------------------------------------------------------------------
-def clean_text(text):
-    text = text.strip().lower()
-    text = url_pattern.sub('', text)
-    text = text.replace('\n', ' ')
-    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
-    words = [word for word in text.split() if word not in stop_words]
-    lemmatized = [lemmatizer.lemmatize(word) for word in words]
-    return ' '.join(lemmatized)
+import mlflow
+from mlflow.tracking import MlflowClient
+import joblib
 
-def dummy_sentiment(comment):
-    """Mock sentiment model for demo."""
-    cleaned = clean_text(comment)
-    if not cleaned:
-        return 0  # Neutral
-    return random.choices([0, 1, 2], weights=[0.3, 0.5, 0.2])[0]  # 0: neutral, 1: positive, 2: negative
+def load_model_and_vectorizer(model_name: str, version: int = None):
+        # mlflow.set_tracking_uri("http://")
+        client = MlflowClient()
+        if version is None:
+            # Load the latest version
+            model_uri = f"models:/{model_name}/latest"
+        else:
+            model_uri = f"models:/{model_name}/{version}"
+        
+        model = mlflow.pyfunc.load_model(model_uri)
+        print(f"Model {model_name} loaded successfully from version {version}.")
+
+        vectorizer_path = os.path.join("models", "vectorizers", "tfidf3gram_vectorizer.pkl")
+        vectorizer = joblib.load(vectorizer_path)
+        return model, vectorizer
+
+model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=None)
+
 
 # -----------------------------------------------------------------------------
 # API Endpoints
 # -----------------------------------------------------------------------------
+def preprocess_text(text: str) -> str:
+    """Clean and preprocess the input text."""
+    text = text.strip().lower()
+    text = re.sub(r'https?://\S+|www\.\S+', '', text)  # Remove URLs
+    text = text.replace('\n', ' ')  # Replace newlines with spaces
+    text = re.sub(r'[^\x00-\x7F]+', '', text)  # Remove all non-ASCII characters
+    text = re.sub(r'[^a-zA-Z0-9\s!?.,]', '', text)  # Remove non-alphabetic characters
+    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)  # Remove punctuation
+    words = [word for word in text.split() if word not in stop_words] # Remove stop words
+    lemmatized = [lemmatizer.lemmatize(word) for word in words] # Lemmatize words
+    cleaned_text = ' '.join(lemmatized) 
+    return cleaned_text
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data = request.json
-    comments = data.get("comments", [])
-    result = []
-    for comment in comments:
-        sentiment = dummy_sentiment(comment)
-        result.append({"comment": comment, "sentiment": sentiment})
-    return jsonify(result)
+    """Endpoint to predict sentiment of a comment."""
+    data = request.get_json()
+    if 'comments' not in data:
+        return jsonify({'error': 'No comment provided'}), 400
 
-# @app.route('/generate_chart', methods=['POST'])
-# def generate_chart():
-#     sentiment_counts = request.json.get("sentiment_counts", {})
-#     labels = ['Neutral', 'Positive', 'Negative']
-#     sizes = [
-#         sentiment_counts.get('0', 0),
-#         sentiment_counts.get('1', 0),
-#         sentiment_counts.get('2', 0)
-#     ]
-#     fig, ax = plt.subplots()
-#     ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
-#     ax.axis('equal')
-#     output = BytesIO()
-#     plt.savefig(output, format='png')
-#     output.seek(0)
-#     return send_file(output, mimetype='image/png')
+    comments = data.get('comments')
+    cleaned_comments = [preprocess_text(comment) for comment in comments]
+    transformed_comments = vectorizer.transform(cleaned_comments)
+
+    prediction = model.predict(transformed_comments).tolist()
+
+    response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
+    return jsonify(response)
 
 @app.route('/generate_chart', methods=['POST'])
 def generate_chart():
@@ -167,8 +177,6 @@ def generate_trend_graph():
         logger.error(f"Error generating trend graph: {e}")
         return jsonify({"error": str(e)}), 500
 
-from youtube_transcript_api import YouTubeTranscriptApi
-import google.generativeai as genai
 
 GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
 genai.configure(api_key=GENAI_API_KEY)
@@ -192,30 +200,6 @@ def summarize_video():
     except Exception as e:
         logger.error(f"Summary generation failed: {e}")
         return jsonify({"error": str(e)}), 500
-
-
-# @app.route('/generate_trend_graph', methods=['POST'])
-# def generate_trend():
-#     data = request.json.get("sentiment_data", [])
-#     df = pd.DataFrame(data)
-#     df['timestamp'] = pd.to_datetime(df['timestamp'])
-#     df.set_index('timestamp', inplace=True)
-#     df['sentiment'] = df['sentiment'].map({0: "Neutral", 1: "Positive", 2: "Negative"})
-#     df['count'] = 1
-#     trend = df.groupby([pd.Grouper(freq='H'), 'sentiment']).count().unstack().fillna(0)
-#     # df['month'] = df['timestamp'].dt.to_period('M').dt.to_timestamp()
-#     # df['sentiment'] = df['sentiment'].map({0: "Neutral", 1: "Positive", 2: "Negative"})
-#     # df['count'] = 1
-#     # trend = df.groupby(['month', 'sentiment'])['count'].count().unstack().fillna(0)
-
-#     trend.columns = trend.columns.droplevel(0)
-#     fig, ax = plt.subplots(figsize=(6, 3))
-#     trend.plot(ax=ax)
-#     plt.tight_layout()
-#     output = BytesIO()
-#     plt.savefig(output, format='png')
-#     output.seek(0)
-#     return send_file(output, mimetype='image/png')
 
 @app.route('/generate_wordcloud', methods=['POST'])
 def wordcloud():
