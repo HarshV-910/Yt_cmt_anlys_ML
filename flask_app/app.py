@@ -167,6 +167,32 @@ def generate_trend_graph():
         logger.error(f"Error generating trend graph: {e}")
         return jsonify({"error": str(e)}), 500
 
+from youtube_transcript_api import YouTubeTranscriptApi
+import google.generativeai as genai
+
+GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
+genai.configure(api_key=GENAI_API_KEY)
+
+@app.route("/summarize_video", methods=["POST"])
+def summarize_video():
+    try:
+        video_id = request.json.get("video_id")
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        full_text = " ".join([line['text'] for line in transcript])
+        prompt = f'Summarize this youtube video transcript and also give result with punctuations \ntext = "{full_text}."'
+
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            system_instruction=prompt
+        )
+
+        response = model.generate_content("now give summary of this video transcript")
+        return jsonify({"summary": response.text})
+
+    except Exception as e:
+        logger.error(f"Summary generation failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 # @app.route('/generate_trend_graph', methods=['POST'])
 # def generate_trend():

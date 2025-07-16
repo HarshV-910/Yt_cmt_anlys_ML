@@ -17,4 +17,6 @@ imbalanced-learn
 flask_cors
 wordcloud
 flask
+openai
+youtube-transcript-api
 # 'dvc[s3]'

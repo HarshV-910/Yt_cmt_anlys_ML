@@ -315,6 +315,31 @@ window.analysisStartTime = performance.now();
       });
     });
 
+        document.getElementById("btn-summary").addEventListener("click", async () => {
+      toggleSection("video-summary", () => {
+        const div = document.createElement("div");
+        div.textContent = "Summarizing... Please wait.";
+
+        fetch(`${API_BASE}/summarize_video`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ video_id: videoIdDiv.textContent.split(": ")[1] })
+        })
+          .then(res => res.json())
+          .then(data => {
+            const summary = data.summary;
+            div.textContent = "Summary:\n\n" + summary;
+            window.videoSummary = summary;  // Store for export
+          })
+          .catch(err => {
+            div.textContent = "Failed to fetch summary.";
+            console.error(err);
+          });
+
+        return div;
+      });
+    });
+
     document.getElementById("btn-export").addEventListener("click", async () => {
       const startTime = window.analysisStartTime || performance.timing.navigationStart;
       const endTime = performance.now();
@@ -323,6 +348,7 @@ window.analysisStartTime = performance.now();
       const posCount = sentiments.filter((s) => s === 1).length;
       const neutralCount = sentiments.filter((s) => s === 0).length;
       const negCount = sentiments.filter((s) => s === 2).length;
+      const summaryText = window.videoSummary || "Summary not generated yet. You can generate it by clicking the 'Generate Summary' button on extension";
 
       const textReport = `
     YouTube Comment Analysis Report
@@ -340,6 +366,9 @@ window.analysisStartTime = performance.now();
     Total Negative Comments    : ${negCount}
 
     Time Taken for Analysis    : ${totalTimeSeconds} seconds
+
+    --- Video Summary ---
+    ${summaryText}
     `.trim();
 
       const blob = new Blob([textReport], { type: "text/plain" });
