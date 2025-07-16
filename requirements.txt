@@ -16,4 +16,5 @@ nltk
 imbalanced-learn
 flask_cors
 wordcloud
+flask
 # 'dvc[s3]'

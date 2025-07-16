@@ -1,11 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Comment Sentiment",
+  "name": "Yt_cmy_anlys_ML",
   "version": "1.0",
-  "description": "Analyze sentiment of YouTube comments",
-  "permissions": ["scripting", "activeTab"],
+  "description": "Analyze sentiment of YouTube comments using ML",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["http://localhost:5000/"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Analyze Sentiment"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
   }
 }

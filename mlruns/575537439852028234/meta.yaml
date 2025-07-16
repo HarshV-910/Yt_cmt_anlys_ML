@@ -1,0 +1,6 @@
+artifact_location: file:///home/harsh/Projects/yt_cmt_anlys_ML/mlruns/575537439852028234
+creation_time: 1752605771421
+experiment_id: '575537439852028234'
+last_update_time: 1752605771421
+lifecycle_stage: active
+name: Model_Evaluation_lightgbm

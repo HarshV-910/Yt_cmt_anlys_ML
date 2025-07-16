@@ -1,20 +1,45 @@
-from flask import Flask, request, jsonify
-import flask_cors
-from flask_cors import CORS
+from flask import Flask, request, jsonify, send_file
 import os
-import mlflow
-from mlflow.tracking import MlflowClient
-import numpy as np
-import joblib
 import re
-import pandas as pd
-import nltk
 import string
+import logging
+import nltk
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from wordcloud import WordCloud
+from io import BytesIO
+import uuid
+import random
 
+# -----------------------------------------------------------------------------
+# Flask App Initialization
+# -----------------------------------------------------------------------------
+app = Flask(__name__)
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+logger = logging.getLogger('api_logger')
+logger.setLevel(logging.DEBUG)
+os.makedirs('reports/logs', exist_ok=True)
+file_handler = logging.FileHandler('reports/logs/api.log')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# -----------------------------------------------------------------------------
+# NLTK Initialization
+# -----------------------------------------------------------------------------
+nltk.download("stopwords")
+nltk.download("wordnet")
 lemmatizer = WordNetLemmatizer()
 
+# -----------------------------------------------------------------------------
+# Preprocessing Config
+# -----------------------------------------------------------------------------
 words_to_keep = {
     'not', 'no', 'never', 'none', 'nothing', 'nowhere', 'neither', 'nor', 'cannot',
     "can't", "won't", "isn't", "aren't", "wasn't", "weren't", "don't", "didn't", "doesn't",
@@ -26,169 +51,161 @@ words_to_keep = {
 stop_words = set(stopwords.words('english')) - words_to_keep
 url_pattern = re.compile(r'https?://\S+|www\.\S+')
 
-app = Flask(__name__)
-# Allow CORS for Chrome Extensions and localhost
-CORS(app, origins=[
-    "chrome-extension://goligagcdhmagbapncddhglnbilikned",
-    "http://localhost:5000",
-    "http://127.0.0.1:5000"
-])
-
-def preprocess_text(text: str) -> str:
-    """Clean and preprocess the input text."""
+# -----------------------------------------------------------------------------
+# Utility Functions
+# -----------------------------------------------------------------------------
+def clean_text(text):
     text = text.strip().lower()
-    text = re.sub(r'https?://\S+|www\.\S+', '', text)  # Remove URLs
-    text = text.replace('\n', ' ')  # Replace newlines with spaces
-    text = re.sub(r'[^a-zA-Z0-9\s!?.,]', '', text)  # Remove non-alphabetic characters
-    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)  # Remove punctuation
-    words = [word for word in text.split() if word not in stop_words] # Remove stop words
-    lemmatized = [lemmatizer.lemmatize(word) for word in words] # Lemmatize words
-    cleaned_text = ' '.join(lemmatized) 
-    return cleaned_text
+    text = url_pattern.sub('', text)
+    text = text.replace('\n', ' ')
+    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
+    words = [word for word in text.split() if word not in stop_words]
+    lemmatized = [lemmatizer.lemmatize(word) for word in words]
+    return ' '.join(lemmatized)
 
-def load_model_and_vectorizer(model_name: str, version: int = None):
-        # mlflow.set_tracking_uri("http://")
-        client = MlflowClient()
-        if version is None:
-            # Load the latest version
-            model_uri = f"models:/{model_name}/latest"
-        else:
-            model_uri = f"models:/{model_name}/{version}"
-        
-        model = mlflow.pyfunc.load_model(model_uri)
-        print(f"Model {model_name} loaded successfully from version {version}.")
+def dummy_sentiment(comment):
+    """Mock sentiment model for demo."""
+    cleaned = clean_text(comment)
+    if not cleaned:
+        return 0  # Neutral
+    return random.choices([0, 1, 2], weights=[0.3, 0.5, 0.2])[0]  # 0: neutral, 1: positive, 2: negative
 
-        vectorizer_path = os.path.join("models", "vectorizers", "tfidf3gram_vectorizer.pkl")
-        vectorizer = joblib.load(vectorizer_path)
-        return model, vectorizer
-
-# def load_model_and_vectorizer():
-#     """Load the model and vectorizer from MLflow Model Registry."""
-#     model_path = os.path.join("models", "model", "lightGBM_model_v2.pkl")
-#     model = joblib.load(model_path)
-#     return model, vectorizer
-
-
-model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=2)
-from flask import send_file
-import matplotlib.pyplot as plt
-import io
-
-@app.route('/generate_chart', methods=['POST'])
-def generate_chart():
-    data = request.get_json()
-    sentiment_counts = data.get('sentiment_counts', {})
-    labels = ['Positive', 'Neutral', 'Negative']
-    values = [
-        sentiment_counts.get("1", 0),
-        sentiment_counts.get("0", 0),
-        sentiment_counts.get("2", 0)
-    ]
-    colors = ["#1b5b1a", "#888888", "#b62c2c"]
-
-    fig, ax = plt.subplots(figsize=(3, 3))
-    ax.pie(values, labels=labels, colors=colors, autopct='%1.1f%%', startangle=140)
-    ax.axis('equal')
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
-    plt.close(fig)
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
-
-from flask import request, send_file
-import matplotlib.pyplot as plt
-import io
-import pandas as pd
-from datetime import datetime
-
-@app.route('/generate_trend_graph', methods=['POST'])
-def generate_trend_graph():
-    data = request.get_json()
-    sentiment_data = data.get('sentiment_data', [])
-    if not sentiment_data:
-        return "No data", 400
-
-    df = pd.DataFrame(sentiment_data)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
-    df = df.dropna(subset=['timestamp'])
-
-    # Use only year and month for grouping
-    df['month'] = df['timestamp'].dt.to_period('M').dt.to_timestamp()
-
-    # Map sentiment values to int if needed
-    df['sentiment'] = df['sentiment'].astype(int)
-
-    # Count each sentiment per month
-    pos = df[df['sentiment'] == 1].groupby('month').size()
-    neu = df[df['sentiment'] == 0].groupby('month').size()
-    neg = df[df['sentiment'].isin([-1, 2])].groupby('month').size()  # Use -1 or 2 for negative
-
-    # Union of all months
-    all_months = pd.date_range(df['month'].min(), df['month'].max(), freq='MS')
-    pos = pos.reindex(all_months, fill_value=0)
-    neu = neu.reindex(all_months, fill_value=0)
-    neg = neg.reindex(all_months, fill_value=0)
-
-    # Plot
-    fig, ax = plt.subplots(figsize=(5, 3))
-    ax.plot(pos.index, pos.values, color='#1b5b1a', marker='o', label='Positive')
-    ax.plot(neu.index, neu.values, color='#444444', marker='o', label='Neutral')
-    ax.plot(neg.index, neg.values, color='#b62c2c', marker='o', label='Negative')
-    ax.set_xlabel('Month')
-    ax.set_ylabel('Number of Comments')
-    ax.set_title('Monthly Sentiment Trend')
-    ax.legend()
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
-    plt.close(fig)
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
-
-from wordcloud import WordCloud
-
-@app.route('/generate_wordcloud', methods=['POST'])
-def generate_wordcloud():
-    data = request.get_json()
-    comments = data.get('comments', [])
-    text = ' '.join(comments)
-    wc = WordCloud(width=400, height=200, background_color='white').generate(text)
-    buf = io.BytesIO()
-    wc.to_image().save(buf, format='PNG')
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
+# -----------------------------------------------------------------------------
+# API Endpoints
+# -----------------------------------------------------------------------------
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Endpoint to predict sentiment of a comment."""
-    data = request.get_json()
-    if 'comments' not in data:
-        return jsonify({'error': 'No comment provided'}), 400
+    data = request.json
+    comments = data.get("comments", [])
+    result = []
+    for comment in comments:
+        sentiment = dummy_sentiment(comment)
+        result.append({"comment": comment, "sentiment": sentiment})
+    return jsonify(result)
 
-    comments = data.get('comments')
-    cleaned_comments = [preprocess_text(comment) for comment in comments]
-    transformed_comments = vectorizer.transform(cleaned_comments)
+# @app.route('/generate_chart', methods=['POST'])
+# def generate_chart():
+#     sentiment_counts = request.json.get("sentiment_counts", {})
+#     labels = ['Neutral', 'Positive', 'Negative']
+#     sizes = [
+#         sentiment_counts.get('0', 0),
+#         sentiment_counts.get('1', 0),
+#         sentiment_counts.get('2', 0)
+#     ]
+#     fig, ax = plt.subplots()
+#     ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
+#     ax.axis('equal')
+#     output = BytesIO()
+#     plt.savefig(output, format='png')
+#     output.seek(0)
+#     return send_file(output, mimetype='image/png')
 
-    prediction = model.predict(transformed_comments).tolist()
+@app.route('/generate_chart', methods=['POST'])
+def generate_chart():
+    sentiment_counts = request.json.get("sentiment_counts", {})
+    labels = ['Neutral', 'Positive', 'Negative']
+    sizes = [
+        sentiment_counts.get('0', 0),
+        sentiment_counts.get('1', 0),
+        sentiment_counts.get('2', 0)
+    ]
 
-    response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
-    return jsonify(response)
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=150)
+    wedges, texts, autotexts = ax.pie(
+        sizes,
+        labels=labels,
+        autopct='%1.1f%%',
+        startangle=140,
+        textprops={'fontsize': 14}
+    )
+    for autotext in autotexts:
+        autotext.set_fontsize(12)
+
+    ax.axis('equal')
+    output = BytesIO()
+    plt.tight_layout()
+    plt.savefig(output, format='png', bbox_inches='tight')
+    output.seek(0)
+    return send_file(output, mimetype='image/png')
+
+@app.route("/generate_trend_graph", methods=["POST"])
+def generate_trend_graph():
+    try:
+        sentiment_data = request.json.get("sentiment_data", [])
+        if not sentiment_data:
+            raise ValueError("No sentiment data provided.")
+
+        df = pd.DataFrame(sentiment_data)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        df.dropna(subset=['timestamp'], inplace=True)
+
+        df['month'] = df['timestamp'].dt.to_period('M').dt.to_timestamp()
+        df['sentiment'] = df['sentiment'].map({0: "Neutral", 1: "Positive", 2: "Negative"})
+        df['count'] = 1
+
+        trend = df.groupby(['month', 'sentiment'])['count'].count().unstack().fillna(0)
+
+        # Plotting
+        fig, ax = plt.subplots(figsize=(8, 4), dpi=150)
+        trend.plot(ax=ax, marker='o', linewidth=2)
+
+        ax.set_title("Monthly Sentiment Trend")
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Number of Comments")
+        ax.legend(title="Sentiment")
+        ax.grid(True)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        output = BytesIO()
+        plt.savefig(output, format="png", bbox_inches="tight")
+        output.seek(0)
+        return send_file(output, mimetype="image/png")
+
+    except Exception as e:
+        logger.error(f"Error generating trend graph: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
-def clean_text(text: str) -> str:
-        text = text.strip().lower()
-        text = url_pattern.sub('', text)
-        text = text.replace('\n', ' ')
-        text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
-        words = [word for word in text.split() if word not in stop_words]
-        lemmatized = [lemmatizer.lemmatize(word) for word in words]
-        cleaned_text = ' '.join(lemmatized)
-        return cleaned_text
-        return ""
+# @app.route('/generate_trend_graph', methods=['POST'])
+# def generate_trend():
+#     data = request.json.get("sentiment_data", [])
+#     df = pd.DataFrame(data)
+#     df['timestamp'] = pd.to_datetime(df['timestamp'])
+#     df.set_index('timestamp', inplace=True)
+#     df['sentiment'] = df['sentiment'].map({0: "Neutral", 1: "Positive", 2: "Negative"})
+#     df['count'] = 1
+#     trend = df.groupby([pd.Grouper(freq='H'), 'sentiment']).count().unstack().fillna(0)
+#     # df['month'] = df['timestamp'].dt.to_period('M').dt.to_timestamp()
+#     # df['sentiment'] = df['sentiment'].map({0: "Neutral", 1: "Positive", 2: "Negative"})
+#     # df['count'] = 1
+#     # trend = df.groupby(['month', 'sentiment'])['count'].count().unstack().fillna(0)
 
+#     trend.columns = trend.columns.droplevel(0)
+#     fig, ax = plt.subplots(figsize=(6, 3))
+#     trend.plot(ax=ax)
+#     plt.tight_layout()
+#     output = BytesIO()
+#     plt.savefig(output, format='png')
+#     output.seek(0)
+#     return send_file(output, mimetype='image/png')
 
+@app.route('/generate_wordcloud', methods=['POST'])
+def wordcloud():
+    comments = request.json.get("comments", [])
+    text = " ".join(clean_text(comment) for comment in comments)
+    wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+    fig, ax = plt.subplots()
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+    output = BytesIO()
+    plt.savefig(output, format='png')
+    output.seek(0)
+    return send_file(output, mimetype='image/png')
+
+# -----------------------------------------------------------------------------
+# Run
+# -----------------------------------------------------------------------------
 if __name__ == '__main__':
-     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
+    app.run(debug=True)
