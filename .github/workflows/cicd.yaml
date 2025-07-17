@@ -119,6 +119,7 @@ jobs:
           PYTHONPATH: .
         run: |
           nohup python3 flask_app/app.py &
+          sleep 20
 
       - name: Run API Testing
         run: |
