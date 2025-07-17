@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import mlflow
+from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 
 # -----------------------------------------------------------------------------
@@ -51,16 +52,16 @@ def register_model(info: dict):
         logger.info(f"Model registered as version {result.version}.")
 
 
-        # client = mlflow.tracking.MlflowClient()
-        # # Transition to Staging
-        # client.transition_model_version_stage(
-        #     name=model_name,
-        #     version=result.version,
-        #     stage="Staging",
-        #     archive_existing_versions=True
-        # )
-        # logger.info(f"Model version {result.version} transitioned to Staging.")
-        # client.set_registered_model_alias(model_name, "staging", result.version)
+        client = MlflowClient()
+        # Transition to Staging
+        client.transition_model_version_stage(
+            name=model_name,
+            version=result.version,
+            stage="Staging",
+            archive_existing_versions=True
+        )
+        logger.info(f"Model version {result.version} transitioned to Staging.")
+        client.set_registered_model_alias(model_name, "staging", result.version)
 
         logger.debug(f"Model {model_name} registered with version {result.version}")
 

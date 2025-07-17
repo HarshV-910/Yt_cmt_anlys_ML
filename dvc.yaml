@@ -40,8 +40,6 @@ stages:
     - src/visualization/model_evaluation.py
     - data/interim/test_processed.csv
     - models
-    # - models/model/lightGBM_model.pkl
-    # - models/vectorizers/tfidf3gram_vectorizer.pkl
     metrics:
     - reports/metrics/metrics.json:
         cache: false

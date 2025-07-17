@@ -1,0 +1,22 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+scipy
+mlflow
+awscli
+pyyaml
+mlflow
+lightgbm
+kagglehub
+boto3
+dvc
+nltk
+imbalanced-learn
+flask_cors
+wordcloud
+flask
+openai
+youtube-transcript-api
+# 'dvc[s3]'

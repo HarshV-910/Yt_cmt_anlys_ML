@@ -66,6 +66,7 @@ def load_model_and_vectorizer(model_name: str, version: int = None):
         if version is None:
             # Load the latest version
             model_uri = f"models:/{model_name}/latest"
+            # model_uri = f"models:/{model_name}/Production"
         else:
             model_uri = f"models:/{model_name}/{version}"
         
