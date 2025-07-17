@@ -3,8 +3,8 @@ import pytest
 import requests
 
 # Replace with actual endpoints if deployed externally
-FLASK_API_URL = "http://127.0.0.1:5000/predict"
-GEMINI_API_URL = "http://127.0.0.1:5000/summarize_video" # Updated to your new endpoint
+FLASK_API_URL = "http://localhost:5000/predict"
+GEMINI_API_URL = "http://localhost:5000/summarize_video" # Updated to your new endpoint
 
 
 def test_flask_api():
