@@ -91,14 +91,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
         run: |
-          pytest tests/test_model.py --disable-warnings -v
+          PYTHONPATH=. pytest tests/test_model.py --disable-warnings -v
       - name: Run Model Signature Test
         env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
         run: |
-          pytest tests/test_model_signature.py --disable-warnings -v
+          PYTHONPATH=. pytest tests/test_model_signature.py --disable-warnings -v
       - name: Run Model Performance Test
         if: success() # Only run if previous steps were successful
         env: 
@@ -106,6 +106,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
         run: |
-          pytest tests/test_performance.py --disable-warnings -v
+          PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
     # ------------------------------------
         
