@@ -80,7 +80,7 @@ jobs:
         run: |
           git push origin ${{ github.ref_name }}
         # -----------------------------
-        
+
       # for Testing
       - name: Install Test Dependencies
         run: |
@@ -105,6 +105,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
         run: |
-          pytest tests/test_performance.py --disable-warnings -v 
+          pytest tests/test_performance.py --disable-warnings -v
     # ------------------------------------
         
