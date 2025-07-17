@@ -35,7 +35,8 @@ stages:
       - models/vectorizers
 
   model_evaluation:
-    cmd: python3 src/visualization/model_evaluation.py
+    cmd: PYTHONPATH=. python3 src/visualization/model_evaluation.py
+    # cmd: python3 src/visualization/model_evaluation.py
     deps:
     - src/visualization/model_evaluation.py
     - data/interim/test_processed.csv
@@ -47,7 +48,7 @@ stages:
     - reports/experiment_info.json
 
   model_registration:
-    cmd: python3 src/visualization/model_registration.py
+    cmd: PYTHONPATH=. python3 src/visualization/model_registration.py
     deps:
     - src/visualization/model_registration.py
     - reports/experiment_info.json
