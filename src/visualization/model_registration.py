@@ -20,7 +20,7 @@ logger.addHandler(file_handler)
 # -----------------------------------------------------------------------------
 # MLflow Tracking URI (uncomment for local)
 # -----------------------------------------------------------------------------
-# mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri("http://ec2-16-171-200-63.eu-north-1.compute.amazonaws.com:5000")
 
 # -----------------------------------------------------------------------------
 # Load Experiment Info
@@ -53,16 +53,9 @@ def register_model(info: dict):
 
 
         client = MlflowClient()
-        # Transition to Staging
-        client.transition_model_version_stage(
-            name=model_name,
-            version=result.version,
-            stage="Staging",
-            archive_existing_versions=True
-        )
-        logger.info(f"Model version {result.version} transitioned to Staging.")
-        client.set_registered_model_alias(model_name, "staging", result.version)
+        client.set_registered_model_alias(model_name, "Staging", result.version)
 
+        logger.info(f"Model version {result.version} transitioned to Staging.")
         logger.debug(f"Model {model_name} registered with version {result.version}")
 
 
