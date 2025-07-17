@@ -117,7 +117,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
         run: |
-          nohup python3 flask_app/app.py &
+          nohup PYTHONPATH=. python3 flask_app/app.py &
 
       - name: Run API Testing
         run: |
