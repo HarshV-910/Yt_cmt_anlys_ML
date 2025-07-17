@@ -7,6 +7,7 @@ import mlflow
 from mlflow.models import infer_signature
 import pandas as pd
 from sklearn.metrics import classification_report, accuracy_score, f1_score, precision_score, recall_score
+from src.config.mlflow_config import setup_mlflow
 
 
 # -----------------------------------------------------------------------------
@@ -24,8 +25,7 @@ logger.addHandler(file_handler)
 # -----------------------------------------------------------------------------
 # MLflow Tracking URI (uncomment for local)
 # -----------------------------------------------------------------------------
-mlflow.set_tracking_uri("http://ec2-16-171-200-63.eu-north-1.compute.amazonaws.com:5000")
-
+setup_mlflow()
 mlflow.set_experiment("Model_Evaluation_lightgbm")
 
 # -----------------------------------------------------------------------------
@@ -109,6 +109,8 @@ def evaluate_model():
             precision = precision_score(y_test, y_pred, average='weighted')
             recall = recall_score(y_test, y_pred, average='weighted')
 
+            print(f"\n\nAccuracy: {acc:.4f}\n\n")
+
             logger.info(f"Accuracy: {acc:.4f}, F1-score: {f1:.4f}")
             metrics =  {
                 'accuracy': acc,
@@ -137,23 +139,10 @@ def evaluate_model():
             mlflow.log_dict(report, "classification_report.json")
             logger.info("Classification report logged.")
 
-
-            # # Log metrics to MLflow
-            # mlflow.log_metric("accuracy", acc)
-            # mlflow.log_metric("f1_score", f1)
-            # mlflow.log_metric("precision", precision)
-            # mlflow.log_metric("recall", recall)
-
-
-            # # Ensure directory exists
-            # os.makedirs("reports/metrics", exist_ok=True)
-
-            # # Save metrics JSON
-            # with open("reports/metrics/metrics.json", "w") as f:
-            #     json.dump(metrics, f, indent=4)
-
             # Log model to MLflow
-            mlflow.sklearn.log_model(model, artifact_path="lightGBM_model_v2")
+            input_example = pd.DataFrame(X_test_vec.toarray()[:5], columns=vectorizer.get_feature_names_out())  # Example input for signature inference
+            signature = infer_signature(input_example, model.predict(X_test_vec[:5]))
+            mlflow.sklearn.log_model(model, artifact_path="lightGBM_model_v2", signature=signature,input_example=input_example)
             mlflow.log_artifact(__file__, artifact_path="scripts")
             mlflow.log_artifact(metrics_output_path, artifact_path="metrics")
 
