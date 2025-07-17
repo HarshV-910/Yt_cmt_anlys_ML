@@ -122,6 +122,6 @@ jobs:
 
       - name: Run API Testing
         run: |
-          PYTHONPATH=. pytest tests/test_APIs.py --disable-warnings -v
+          pytest tests/test_APIs.py --disable-warnings -v
     # ------------------------------------
         
