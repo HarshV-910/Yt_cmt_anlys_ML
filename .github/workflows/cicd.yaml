@@ -85,6 +85,7 @@ jobs:
       - name: Install Test Dependencies
         run: |
           pip install pytest
+
       - name: Run Model Loading Test
         env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -92,6 +93,7 @@ jobs:
           AWS_DEFAULT_REGION: eu-north-1
         run: |
           PYTHONPATH=. pytest tests/test_model.py --disable-warnings -v
+
       - name: Run Model Signature Test
         env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -99,6 +101,7 @@ jobs:
           AWS_DEFAULT_REGION: eu-north-1
         run: |
           PYTHONPATH=. pytest tests/test_model_signature.py --disable-warnings -v
+
       # - name: Run Model Performance Test
       #   if: success() # Only run if previous steps were successful
       #   env: 
@@ -107,5 +110,17 @@ jobs:
       #     AWS_DEFAULT_REGION: eu-north-1
       #   run: |
       #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
+
+      - name: Start Flask app
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-north-1
+        run: |
+          nohup python3 flask_app/app.py &
+
+      - name: Run API Testing
+        run: |
+          PYTHONPATH=. pytest tests/test_APIs.py --disable-warnings -v
     # ------------------------------------
         

@@ -1,3 +1,6 @@
+import mlflow
+from mlflow.tracking import MlflowClient
+import joblib
 from flask import Flask, request, jsonify, send_file
 import os
 import re
@@ -15,6 +18,8 @@ import uuid
 import random
 from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
+from src.config.mlflow_config import setup_mlflow
+setup_mlflow()
 
 # -----------------------------------------------------------------------------
 # Flask App Initialization
@@ -56,9 +61,6 @@ url_pattern = re.compile(r'https?://\S+|www\.\S+')
 # -----------------------------------------------------------------------------
 # load model and vectorizer
 # -----------------------------------------------------------------------------
-import mlflow
-from mlflow.tracking import MlflowClient
-import joblib
 
 def load_model_and_vectorizer(model_name: str, version: int = None):
         # mlflow.set_tracking_uri("http://")
@@ -77,7 +79,7 @@ def load_model_and_vectorizer(model_name: str, version: int = None):
         vectorizer = joblib.load(vectorizer_path)
         return model, vectorizer
 
-model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=None)
+model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=1)
 
 
 # -----------------------------------------------------------------------------
