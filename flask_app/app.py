@@ -20,6 +20,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
 from src.config.mlflow_config import setup_mlflow
 setup_mlflow()
+# mlflow.set_tracking_uri("http://ec2-16-171-36-111.eu-north-1.compute.amazonaws.com:5000")
 
 # -----------------------------------------------------------------------------
 # Flask App Initialization
@@ -63,7 +64,6 @@ url_pattern = re.compile(r'https?://\S+|www\.\S+')
 # -----------------------------------------------------------------------------
 
 def load_model_and_vectorizer(model_name: str, version: int = None):
-        # mlflow.set_tracking_uri("http://")
         client = MlflowClient()
         if version is None:
             # Load the latest version
@@ -79,7 +79,7 @@ def load_model_and_vectorizer(model_name: str, version: int = None):
         vectorizer = joblib.load(vectorizer_path)
         return model, vectorizer
 
-model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=None)
+model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=5)
 
 
 # -----------------------------------------------------------------------------
@@ -108,8 +108,14 @@ def predict():
     comments = data.get('comments')
     cleaned_comments = [preprocess_text(comment) for comment in comments]
     transformed_comments = vectorizer.transform(cleaned_comments)
+    try:
+        feature_names = vectorizer.get_feature_names_out()
+    except AttributeError:
+        num_features = transformed_comments.shape[1]
+        feature_names = [str(i) for i in range(num_features)]
+    df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
 
-    prediction = model.predict(transformed_comments).tolist()
+    prediction = model.predict(df_transformed_comments).tolist()
 
     response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
     return jsonify(response)

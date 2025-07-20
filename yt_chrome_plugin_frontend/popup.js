@@ -83,11 +83,22 @@ window.analysisStartTime = performance.now();
     const avgWords = (
       cleaned.map((c) => c.split(" ").length).reduce((a, b) => a + b, 0) / cleaned.length
     ).toFixed(1);
-    const rating = (
-      ((sentiments.filter((s) => s === 1).length * 2 +
-        sentiments.filter((s) => s === 2).length) * 10) /
-      (2 * sentiments.length)
-    ).toFixed(2);
+
+    const posCount = sentiments.filter((s) => s === 1).length;
+    const neutralCount = sentiments.filter((s) => s === 0).length;
+    const negCount = sentiments.filter((s) => s === 2).length;
+    const totalPolarizedComments = posCount + negCount; // Or total comments if neutrals are included in denominator
+
+    let ratingScore;
+    if (totalPolarizedComments > 0) {
+        // Option 1.1: Only consider polarized comments for the rating basis
+        ratingScore = ((posCount - negCount) / totalPolarizedComments) * 5 + 5; // Scales from 0 to 10
+                                                                             // If all neg, score is 0. If all pos, score is 10.
+    } else {
+        // Handle case with no polarized comments (e.g., all neutral)
+        ratingScore = 5; // A neutral rating
+    }
+    const rating = ratingScore.toFixed(2);
 
     metricTotal.textContent = rawComments.length;
     metricUsed.textContent = cleaned.length;
