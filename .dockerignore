@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pkl
+*.log
+.env
+.vscode/
+.git/
+src/data/
+src/features/
+src/model/
+src/visualization/

@@ -119,10 +119,11 @@ jobs:
           PYTHONPATH: .
         run: |
           nohup python3 flask_app/app.py &
-          sleep 20
+          sleep 50
 
       - name: Run API Testing
         run: |
           pytest tests/test_APIs.py --disable-warnings -v
     # ------------------------------------
+    # Dockerization
         

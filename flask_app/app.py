@@ -79,7 +79,7 @@ def load_model_and_vectorizer(model_name: str, version: int = None):
         vectorizer = joblib.load(vectorizer_path)
         return model, vectorizer
 
-model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=1)
+model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=None)
 
 
 # -----------------------------------------------------------------------------
