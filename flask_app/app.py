@@ -204,6 +204,20 @@ def summarize_video():
         logger.error(f"Summary generation failed: {e}")
         return jsonify({"error": str(e)}), 500
 
+def clean_text(text: str) -> str:
+    try:
+        text = text.strip().lower()
+        text = url_pattern.sub('', text)
+        text = text.replace('\n', ' ')
+        text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
+        words = [word for word in text.split() if word not in stop_words]
+        lemmatized = [lemmatizer.lemmatize(word) for word in words]
+        cleaned_text = ' '.join(lemmatized)
+        return cleaned_text
+    except Exception as e:
+        logger.error(f"Error processing text: {e}")
+        return ""
+
 @app.route('/generate_wordcloud', methods=['POST'])
 def wordcloud():
     comments = request.json.get("comments", [])
