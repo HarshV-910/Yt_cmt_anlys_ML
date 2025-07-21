@@ -39,7 +39,7 @@ def test_gemini_api():
     # This ID should correspond to a video with an available transcript.
     # For testing purposes, you might use a known short video ID with a transcript.
     # Example: "dQw4w9WgXcQ" (Rick Astley - Never Gonna Give You Up) often works for transcript tests.
-    payload = {"video_id": "SSdsncLXLYs"} 
+    payload = {"video_id": "5_50z2nL1g0"} 
     
     response = requests.post(GEMINI_API_URL, json=payload)
     

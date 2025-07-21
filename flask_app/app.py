@@ -244,7 +244,13 @@ def gemini_summary():
         from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-        transcript = transcript_list.find_transcript(['en', 'en-US'])
+        try:
+            transcript = transcript_list.find_transcript(['en', 'en-US'])
+        except NoTranscriptFound:
+            # Fallback to auto-generated English if specific not found
+            logger.info("Specific English transcript not found, trying auto-generated.")
+            transcript = transcript_list.find_generated_transcript(['en'])
+        
         full_transcript = " ".join([d['text'] for d in transcript.fetch()])
         logger.info("Successfully fetched YouTube transcript for video_id: %s", video_id)
 
