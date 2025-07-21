@@ -130,6 +130,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
+          PYTHONUNBUFFERED: 1 # Ensure Python output is unbuffered
           PYTHONPATH: .
           # IMPORTANT: Add your Gemini API Key as a GitHub Secret
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
