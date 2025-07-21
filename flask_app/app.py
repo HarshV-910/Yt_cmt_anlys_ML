@@ -189,6 +189,7 @@ def generate_trend_graph():
 # GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
 GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GENAI_API_KEY)
+#----------------------------------------
 import os
 import logging
 import sys # Import sys to explicitly print to stderr
@@ -245,6 +246,25 @@ except Exception as e:
     logger.exception(e) # Print full traceback
     print(f"FATAL ERROR: ML models loading failed: {e}", file=sys.stderr) # Direct print
     sys.exit(1) # Crash if models can't be loaded
+
+# In flask_app/app.py
+@app.route('/', methods=['GET', 'POST']) # Add POST here!
+def home():
+    # If it's a POST request, you might want to process the payload
+    if request.method == 'POST':
+        try:
+            data = request.json
+            comments = data.get('comments', [])
+            # You might want to process comments here or just acknowledge
+            logger.info(f"Received POST request to / with comments: {comments}")
+            print(f"DEBUG: POST to / received with comments: {comments}", file=sys.stderr)
+            return jsonify({"message": "Comments received", "comments_count": len(comments)}), 200
+        except Exception as e:
+            logger.error(f"Error processing POST to /: {e}")
+            print(f"DEBUG: Error processing POST to /: {e}", file=sys.stderr)
+            return jsonify({"error": "Invalid payload"}), 400
+    # Default GET response
+    return "Flask app is running and accessible!", 200
 
 @app.route('/gemini', methods=['POST'])
 def gemini_summary():
@@ -316,9 +336,7 @@ def gemini_summary():
         logger.exception("Full traceback:") # This should print the stack trace
         print(f"DEBUG: !!! CAUGHT UNHANDLED EXCEPTION in /gemini: {type(e).__name__}: {e} !!!", file=sys.stderr) # Direct print for general errors
         return jsonify({"error": "Internal server error: " + str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+#---------------------------------------------
 # @app.route("/summarize_video", methods=["POST"])
 # def summarize_video():
 #     try:
