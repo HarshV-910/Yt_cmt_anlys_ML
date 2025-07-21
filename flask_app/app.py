@@ -20,7 +20,6 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
 from src.config.mlflow_config import setup_mlflow
 setup_mlflow()
-# mlflow.set_tracking_uri("http://ec2-16-171-36-111.eu-north-1.compute.amazonaws.com:5000")
 
 # -----------------------------------------------------------------------------
 # Flask App Initialization
@@ -79,7 +78,7 @@ def load_model_and_vectorizer(model_name: str, version: int = None):
         vectorizer = joblib.load(vectorizer_path)
         return model, vectorizer
 
-model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=5)
+model, vectorizer = load_model_and_vectorizer("lightGBM_model_v2", version=None)
 
 
 # -----------------------------------------------------------------------------
