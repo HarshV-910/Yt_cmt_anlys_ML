@@ -117,7 +117,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
           PYTHONPATH: .
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
+          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           nohup python3 flask_app/app.py > flask.log 2>&1 &
           for i in {1..20}; do

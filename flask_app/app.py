@@ -194,7 +194,7 @@ genai.configure(api_key=GENAI_API_KEY)
 def summarize_video():
     try:
         video_id = request.json.get("video_id")
-        print("\n\n\nGENAI_API_KEY: ", GENAI_API_KEY, "\nvideo_id: ", video_id,"\n\n\n")
+        print("\n\n\nGEMINI_API_KEY: ", GENAI_API_KEY, "\nvideo_id: ", video_id,"\n\n\n")
         if not video_id:
             return jsonify({"error": "video_id is required"}), 400
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
