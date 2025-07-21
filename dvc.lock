@@ -73,7 +73,7 @@ stages:
       nfiles: 1
     - path: models/vectorizers
       hash: md5
-      md5: 5fce933da69317a093b0eb47f71d355e.dir
+      md5: d41c33705950d13f14d699cf11acdba0.dir
       size: 36841
       nfiles: 1
   model_evaluation:
@@ -85,7 +85,7 @@ stages:
       size: 1337261
     - path: models
       hash: md5
-      md5: 3150a9fd8368873f8c412caea33e425f.dir
+      md5: 5a4c2a42a900b9a71d452ca4873449d2.dir
       size: 3974981
       nfiles: 2
     - path: src/visualization/model_evaluation.py
@@ -95,7 +95,7 @@ stages:
     outs:
     - path: reports/experiment_info.json
       hash: md5
-      md5: 75aa0f0370bac14558b0c94504167fbb
+      md5: 049fa15bd6761a5e4479adecbb522f60
       size: 91
     - path: reports/metrics/metrics.json
       hash: md5
@@ -106,7 +106,7 @@ stages:
     deps:
     - path: reports/experiment_info.json
       hash: md5
-      md5: 75aa0f0370bac14558b0c94504167fbb
+      md5: 049fa15bd6761a5e4479adecbb522f60
       size: 91
     - path: src/visualization/model_registration.py
       hash: md5
