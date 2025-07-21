@@ -31,25 +31,6 @@ def test_flask_api():
         assert "sentiment" in item
 
 
-# API_BASE = "http://localhost:5000"  # Make sure your Flask app is running here
-
-# @pytest.mark.integration
-# def test_summarize_video_endpoint():
-#     video_id = "VJgdOMXhEj0"
-#     payload = {"video_id": video_id}
-
-#     response = requests.post(f"{API_BASE}/summarize_video", json=payload)
-
-#     # Check for 200 OK status
-#     assert response.status_code == 200, f"Expected 200 OK, got {response.status_code}"
-
-#     response_data = response.json()
-
-#     # Validate structure
-#     assert "summary" in response_data, "'summary' key not found in response"
-#     assert isinstance(response_data["summary"], str), "Summary should be a string"
-#     assert len(response_data["summary"].strip()) > 0, "Summary should not be empty"
-
 GEMINI_API_URL = "http://localhost:5000/summarize_video"
 
 def test_gemini_api():

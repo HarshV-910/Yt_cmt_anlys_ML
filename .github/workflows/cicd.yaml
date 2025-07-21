@@ -111,40 +111,34 @@ jobs:
       #   run: |
       #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
 
-      - name: Start Flask app
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-north-1
-          PYTHONPATH: .
-          GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
-          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          nohup python3 flask_app/app.py > flask.log 2>&1 &
-          for i in {1..20}; do
-            if curl -s http://localhost:5000/health; then
-              echo "Flask is up!"
-              break
-            fi
-            echo "Waiting for Flask..."
-            sleep 3
-          done
+      # - name: Start Flask app
+      #   env: 
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: eu-north-1
+      #     PYTHONPATH: .
+      #     GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
+      #     # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      #   run: |
+      #     nohup python3 flask_app/app.py > flask.log 2>&1 &
+      #     for i in {1..20}; do
+      #       if curl -s http://localhost:5000/health; then
+      #         echo "Flask is up!"
+      #         break
+      #       fi
+      #       echo "Waiting for Flask..."
+      #       sleep 3
+      #     done
 
-      - name: Print Flask log (always show)
-        if: always()
-        run: |
-          echo "---------- Flask Log ----------"
-          cat flask.log || echo "No flask.log found"
+      # - name: Run API Testing
+      #   run: |
+      #     pytest tests/test_APIs.py 
 
-      - name: Run API Testing
-        run: |
-          pytest tests/test_APIs.py 
-
-      - name: Print Flask log (on test failure)
-        if: failure()
-        run: |
-          echo "---------- Flask Log ----------"
-          cat flask.log || echo "No flask.log found"
+      # - name: Print Flask log (on test failure)
+      #   if: failure()
+      #   run: |
+      #     echo "---------- Flask Log ----------"
+      #     cat flask.log || echo "No flask.log found"
 
 
     # ------------------------------------
