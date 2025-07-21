@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from nltk.corpus import stopwords
+import traceback
 from nltk.stem import WordNetLemmatizer
 from wordcloud import WordCloud
 from io import BytesIO
@@ -186,22 +187,16 @@ def generate_trend_graph():
         return jsonify({"error": str(e)}), 500
 
 
-# GEMINII_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
+# GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 @app.route("/summarize_video", methods=["POST"])
 def summarize_video():
     try:
-        GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
-        genai.configure(api_key=GEMINI_API_KEY)
         video_id = request.json.get("video_id")
         print("\n\n\nGEMINI_API_KEY: ", GEMINI_API_KEY, "\nvideo_id: ", video_id,"\n\n\n")
-        if not video_id:
-            return jsonify({"error": "video_id is required"}), 400
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        if not transcript:
-            return jsonify({"error": "transcript not fetching"}), 400
         full_text = " ".join([line['text'] for line in transcript])
         prompt = f'Summarize this youtube video transcript and also give result with punctuations \ntext = "{full_text}."'
 
@@ -215,6 +210,7 @@ def summarize_video():
 
     except Exception as e:
         logger.error(f"Summary generation failed: {e}")
+        traceback.print_exc()  # Add this line
         return jsonify({"error": str(e)}), 500
 
 def clean_text(text: str) -> str:
