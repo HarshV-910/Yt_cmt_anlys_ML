@@ -125,6 +125,8 @@ jobs:
       # - name: Run API Testing
       #   run: |
       #     pytest tests/test_APIs.py --disable-warnings -v
+      - name: Check youtube-transcript-api version
+        run: pip show youtube-transcript-api
       - name: Start Flask app with Gunicorn
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
