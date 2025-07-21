@@ -23,7 +23,6 @@ logger.addHandler(file_handler)
 # MLflow Tracking URI (uncomment for local)
 # -----------------------------------------------------------------------------
 setup_mlflow()
-mlflow.set_tracking_uri("http://ec2-16-171-200-63.eu-north-1.compute.amazonaws.com:5000")
 # -----------------------------------------------------------------------------
 # Load Experiment Info
 # -----------------------------------------------------------------------------
