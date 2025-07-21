@@ -189,13 +189,34 @@ def generate_trend_graph():
 # GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
 GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GENAI_API_KEY)
+import os
+import logging
+import sys # Import sys to explicitly print to stderr
+
+# Configure basic logging to capture ALL levels and send to STDERR directly
+logging.basicConfig(
+    level=logging.DEBUG, # Set to DEBUG to capture *everything*
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stderr) # FORCE logs to stderr, which nohup 2>&1 should capture
+    ]
+)
+logger = logging.getLogger(__name__)
+
+from flask import Flask, request, jsonify # Import Flask here
+
+app = Flask(__name__) # Initialize Flask app
+
+# --- IMMEDIATE CHECK FOR GEMINI_API_KEY ON APP STARTUP ---
+# This will log even before any request comes in
 logger.debug("Attempting to load GEMINI_API_KEY...")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 if not gemini_api_key:
     logger.critical("!!!!!!! FATAL: GEMINI_API_KEY environment variable is NOT SET !!!!!!!")
     logger.critical("!!!!!!! This is likely the cause of the 500 error !!!!!!!")
-    # You might even want to exit here in CI to make the error clearer if it's essential
+    # Adding a direct print here for maximum visibility if it fails early
+    print("FATAL ERROR: GEMINI_API_KEY NOT SET! Check GitHub Secrets.", file=sys.stderr)
     # sys.exit(1) # Uncomment this to crash the app immediately if key is missing
 else:
     logger.info("GEMINI_API_KEY successfully loaded (first 5 chars): %s", gemini_api_key[:5])
@@ -207,73 +228,97 @@ else:
     except Exception as e:
         logger.critical("FATAL: Failed to configure Gemini API client during startup!")
         logger.exception(e) # Print full traceback
+        print(f"FATAL ERROR: Gemini client configuration failed: {e}", file=sys.stderr) # Direct print
         sys.exit(1) # Crash if Gemini client cannot be configured
 
 # Load your LightGBM model and vectorizer here
 # Ensure these are loaded ONCE when the app starts, not per request
 try:
-    # Example placeholders, adjust to your actual loading paths and methods
     import joblib
-    # from your_src_module import LabelEncoder
-    
     # Assuming the paths are correct relative to /app
-    # Note: The 'version None' warning might be related to how you save/load these models
-    # but it's likely secondary to the 500 error for Gemini
-    # Ensure your paths are correct, e.g., if model is in 'models/lightGBM_model_v2.pkl'
     # lightgbm_model = joblib.load('/app/models/lightGBM_model_v2.pkl')
     # tfidf_vectorizer = joblib.load('/app/models/vectorizers/tfidf3gram_vectorizer.pkl')
     logger.info("Machine learning models (LightGBM, TF-IDF) loaded successfully.")
+    print("DEBUG: ML models loaded successfully.", file=sys.stderr) # Direct print
 except Exception as e:
     logger.critical("FATAL: Error loading ML models at app startup!")
     logger.exception(e) # Print full traceback
+    print(f"FATAL ERROR: ML models loading failed: {e}", file=sys.stderr) # Direct print
     sys.exit(1) # Crash if models can't be loaded
 
 @app.route('/gemini', methods=['POST'])
 def gemini_summary():
     logger.debug("Received request to /gemini endpoint.")
+    print("DEBUG: Request received at /gemini endpoint.", file=sys.stderr) # Direct print
+
     data = request.json
     video_id = data.get('video_id')
 
     if not video_id:
         logger.warning("Received /gemini request with missing video_id.")
+        print("DEBUG: Missing video_id in /gemini request.", file=sys.stderr) # Direct print
         return jsonify({"error": "Missing video_id"}), 400
 
     try:
         logger.info("Attempting to get YouTube transcript for video_id: %s", video_id)
-        # Import youtube_transcript_api here if not already imported globally
+        print(f"DEBUG: Attempting transcript for video_id: {video_id}", file=sys.stderr) # Direct print
+
         from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        
+        # --- MODIFIED TRANSCRIPT FETCHING FOR MORE ROBUSTNESS ---
+        transcript = None
         try:
             transcript = transcript_list.find_transcript(['en', 'en-US'])
+            logger.info("Found specific English transcript.")
+            print("DEBUG: Found specific English transcript.", file=sys.stderr) # Direct print
         except NoTranscriptFound:
-            # Fallback to auto-generated English if specific not found
-            logger.info("Specific English transcript not found, trying auto-generated.")
-            transcript = transcript_list.find_generated_transcript(['en'])
-        
+            logger.warning("No specific English transcript found, trying generated.")
+            print("DEBUG: No specific English transcript, trying auto-generated.", file=sys.stderr) # Direct print
+            try:
+                transcript = transcript_list.find_generated_transcript(['en'])
+                logger.info("Found auto-generated English transcript.")
+                print("DEBUG: Found auto-generated English transcript.", file=sys.stderr) # Direct print
+            except NoTranscriptFound:
+                # If even auto-generated fails, re-raise the original to hit the outer except
+                raise # Re-raise to fall into the outer except NoTranscriptFound
+
+        if transcript is None: # Should not happen if previous logic works, but as a safeguard
+             raise NoTranscriptFound("Transcript object is None after search attempts.")
+
         full_transcript = " ".join([d['text'] for d in transcript.fetch()])
         logger.info("Successfully fetched YouTube transcript for video_id: %s", video_id)
+        print(f"DEBUG: Successfully fetched transcript for {video_id}, length: {len(full_transcript)}", file=sys.stderr) # Direct print
 
         logger.info("Attempting to generate Gemini summary for video_id: %s", video_id)
-        model = genai.GenerativeModel('gemini-pro') # Re-initialize if necessary, but configure should be enough
+        print(f"DEBUG: Calling Gemini API for video_id: {video_id}", file=sys.stderr) # Direct print
+
+        model = genai.GenerativeModel('gemini-pro')
         prompt = f"Summarize the following YouTube video transcript:\n\n{full_transcript}"
         response = model.generate_content(prompt)
         summary = response.text
         logger.info("Successfully generated Gemini summary for video_id: %s", video_id)
+        print(f"DEBUG: Gemini summary generated for video_id: {video_id}", file=sys.stderr) # Direct print
 
         return jsonify({"video_id": video_id, "summary": summary}), 200
 
     except NoTranscriptFound:
         logger.warning("No transcript found for video_id: %s", video_id)
+        print(f"DEBUG: !!! CAUGHT NoTranscriptFound for video_id: {video_id} !!!", file=sys.stderr) # <--- THIS IS KEY
         return jsonify({"error": "No transcript found for this video."}), 404
     except TranscriptsDisabled:
         logger.warning("Transcripts are disabled for video_id: %s", video_id)
+        print(f"DEBUG: !!! CAUGHT TranscriptsDisabled for video_id: {video_id} !!!", file=sys.stderr) # <--- THIS IS KEY
         return jsonify({"error": "Transcripts are disabled for this video."}), 403
     except Exception as e:
-        # This is the crucial part: log the full traceback for ANY other exception
         logger.critical("!!! UNHANDLED EXCEPTION in /gemini endpoint for video_id: %s !!!", video_id)
-        logger.exception("Full traceback:") # This is key: it prints the stack trace
+        logger.exception("Full traceback:") # This should print the stack trace
+        print(f"DEBUG: !!! CAUGHT UNHANDLED EXCEPTION in /gemini: {type(e).__name__}: {e} !!!", file=sys.stderr) # Direct print for general errors
         return jsonify({"error": "Internal server error: " + str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
 # @app.route("/summarize_video", methods=["POST"])
 # def summarize_video():
 #     try:
