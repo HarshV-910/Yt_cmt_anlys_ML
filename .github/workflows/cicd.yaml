@@ -1,162 +1,3 @@
-# name: CICD Pipeline
-# on: push
-# jobs:
-#   model-deployment:
-#     runs-on: ${{ matrix.os }}
-
-#     strategy:
-#       matrix:
-#         os: [ubuntu-latest] # windows-latest, macos-latest
-#         version: ['3.10']
-
-#     steps:
-#     # basic setup of environment
-#       - name: Checkout code
-#         uses: actions/checkout@v3
-
-#       - name: setup-python
-#         uses: actions/setup-python@v2
-#         with:
-#           python-version: ${{ matrix.version }}
-
-#       # # for multiple python version
-#       # - name: Cache pip dependencies
-#       #   uses: actions/cache@v4
-#       #   with:
-#       #     path: ~/.cache/pip
-#       #     key: ${{ runner.os }}-pip-${{ matrix.version }}-${{ hashFiles('**/requirements.txt') }}
-#       #     restore-keys: |
-#       #       ${{ runner.os }}-pip-${{ matrix.version }}-
-      
-#       # for single python version
-#       - name: Cache pip dependencies
-#         uses: actions/cache@v3
-#         with:
-#           path: ~/.cache/pip
-#           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-#           restore-keys: |
-#             ${{ runner.os }}-pip-
-
-#       - name: install requirements
-#         run: |
-#           pip install -r requirements.txt
-#       # ----------------------------------------
-
-#       # for DVC
-#       - name: run pipeline
-#         env: 
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: eu-north-1
-#         run: |
-#           dvc repro
-#       # -----------------------------
-
-#       # Github Bot for dvc & git push 
-#       - name: DVC data Push to remote
-#         env: 
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: eu-north-1
-#         run: |
-#           dvc push
-
-#       - name: Configure Git
-#         run: |
-#           git config --global user.name "github-actions[bot]"
-#           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
-#       - name: Add changes to Git
-#         run: |
-#           git add .
-#       - name: Commit changes
-#         if: ${{ github.actor != 'github-actions[bot]' }}
-#         run: |
-#           git commit -m "Automated commit of DVC outputs and updated code" || echo "No changes to commit"
-#       - name: Push changes
-#         if: ${{ github.actor != 'github-actions[bot]' }}
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#         run: |
-#           git push origin ${{ github.ref_name }}
-#         # -----------------------------
-
-#       # for Testing
-#       - name: Install Test Dependencies
-#         run: |
-#           pip install pytest
-
-#       - name: Run Model Loading Test
-#         env: 
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: eu-north-1
-#         run: |
-#           PYTHONPATH=. pytest tests/test_model.py --disable-warnings -v
-
-#       - name: Run Model Signature Test
-#         env: 
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: eu-north-1
-#         run: |
-#           PYTHONPATH=. pytest tests/test_model_signature.py --disable-warnings -v
-
-#       # - name: Run Model Performance Test
-#       #   if: success() # Only run if previous steps were successful
-#       #   env: 
-#       #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#       #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#       #     AWS_DEFAULT_REGION: eu-north-1
-#       #   run: |
-#       #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
-
-#       - name: Start Flask app
-#         env: 
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: eu-north-1
-#           PYTHONPATH: .
-#           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-#         run: |
-#           nohup python3 flask_app/app.py &
-#           sleep 50
-
-#       - name: Run API Testing
-#         run: |
-#           pytest tests/test_APIs.py --disable-warnings -v
-#     # ------------------------------------
-#     # Dockerization
-#       - name: Login to AWS ECR
-#         if: success()
-#         run: |
-#           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 252312374343.dkr.ecr.eu-north-1.amazonaws.com
-
-#       - name: Build Docker Image
-#         if: success()
-#         run: |
-#           docker build -t yt-plugin-ecr .
-
-#       - name: Tag Docker Image
-#         if: success()
-#         run: |
-#           docker tag yt-plugin-ecr:latest 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
-      
-#       - name: Push Docker Image To AWS ECR
-#         if: success()
-#         run: |
-#           docker push 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
-
-
-# ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
-
 name: CICD Pipeline
 on: push
 jobs:
@@ -165,10 +6,11 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest] # windows-latest, macos-latest
         version: ['3.10']
 
     steps:
+    # basic setup of environment
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -177,6 +19,16 @@ jobs:
         with:
           python-version: ${{ matrix.version }}
 
+      # # for multiple python version
+      # - name: Cache pip dependencies
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ~/.cache/pip
+      #     key: ${{ runner.os }}-pip-${{ matrix.version }}-${{ hashFiles('**/requirements.txt') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-${{ matrix.version }}-
+      
+      # for single python version
       - name: Cache pip dependencies
         uses: actions/cache@v3
         with:
@@ -185,21 +37,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install requirements
+      - name: install requirements
         run: |
           pip install -r requirements.txt
-          # Add this to confirm the version of youtube-transcript-api installed
-          pip show youtube-transcript-api
+      # ----------------------------------------
 
       # for DVC
-      - name: Run DVC pipeline
+      - name: run pipeline
         env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
         run: |
           dvc repro
+      # -----------------------------
 
+      # Github Bot for dvc & git push 
       - name: DVC data Push to remote
         env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -208,7 +61,7 @@ jobs:
         run: |
           dvc push
 
-      - name: Configure Git for bot
+      - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -216,21 +69,22 @@ jobs:
       - name: Add changes to Git
         run: |
           git add .
-      - name: Commit changes (if any)
+      - name: Commit changes
         if: ${{ github.actor != 'github-actions[bot]' }}
         run: |
           git commit -m "Automated commit of DVC outputs and updated code" || echo "No changes to commit"
-      - name: Push changes (if any)
+      - name: Push changes
         if: ${{ github.actor != 'github-actions[bot]' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git push origin ${{ github.ref_name }}
+        # -----------------------------
 
-      # For Testing
+      # for Testing
       - name: Install Test Dependencies
         run: |
-          pip install pytest requests # Ensure requests is installed for tests
+          pip install pytest
 
       - name: Run Model Loading Test
         env: 
@@ -248,54 +102,31 @@ jobs:
         run: |
           PYTHONPATH=. pytest tests/test_model_signature.py --disable-warnings -v
 
-      - name: Start Flask app with Gunicorn
-        env:
+      # - name: Run Model Performance Test
+      #   if: success() # Only run if previous steps were successful
+      #   env: 
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: eu-north-1
+      #   run: |
+      #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
+
+      - name: Start Flask app
+        env: 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
-          PYTHONUNBUFFERED: 1 # Ensure Python output is unbuffered
-          PYTHONPATH: . # Add current directory to Python path
+          PYTHONPATH: .
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # Install curl if not already present (should be on ubuntu-latest)
-          sudo apt-get update && sudo apt-get install -y curl
-
-          # Start the Flask app with Gunicorn in the background
-          # IMPORTANT: ensure 'flask_app.app:app' correctly points to your Flask instance
-          nohup gunicorn flask_app.app:app -c gunicorn_config.py -b 0.0.0.0:5000 > flask_app.log 2>&1 &
-
-          # Wait for the Flask app to be ready by checking the health endpoint
-          echo "Waiting for Flask app to start..."
-          for i in $(seq 1 60); do # Increased wait time to 60 seconds for robustness
-            if curl -s http://localhost:5000/ > /dev/null; then # Checks GET on root '/'
-              echo "Flask app is up!"
-              break
-            fi
-            echo "Still waiting... ($i/60)"
-            sleep 1
-          done
-
-          # Fail the step if the app didn't start within the timeout
-          if ! curl -s http://localhost:5000/ > /dev/null; then
-            echo "Flask app failed to start within the expected time."
-            echo "--- Displaying Flask app logs for startup debugging ---"
-            cat flask_app.log # Print logs if app didn't start
-            exit 1
-          fi
-          echo "Flask app started and responsive."
+          nohup python3 flask_app/app.py &
+          sleep 50
 
       - name: Run API Testing
-        # This step will only run if the 'Start Flask app' step succeeded
         run: |
           pytest tests/test_APIs.py --disable-warnings -v
-        # Add a step that always runs to show logs if API testing fails
-      - name: Show Flask App Logs on API Test Failure
-        if: failure() # Only run this step if a previous step failed
-        run: |
-          echo "API tests failed. Displaying Flask app logs for debugging:"
-          cat flask_app.log || echo "Flask app log file not found." # Print the log file
-
-    # Dockerization (no changes here)
+    # ------------------------------------
+    # Dockerization
       - name: Login to AWS ECR
         if: success()
         run: |
@@ -317,3 +148,5 @@ jobs:
         if: success()
         run: |
           docker push 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
+
+
