@@ -126,4 +126,26 @@ jobs:
           pytest tests/test_APIs.py --disable-warnings -v
     # ------------------------------------
     # Dockerization
-        
+      - name: Login to AWS ECR
+        if: success()
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 252312374343.dkr.ecr.eu-north-1.amazonaws.com
+
+      - name: Build Docker Image
+        if: success()
+        run: |
+          docker build -t yt-plugin-ecr .
+
+      - name: Tag Docker Image
+        if: success()
+        run: |
+          docker tag yt-plugin-ecr:latest 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
+      
+      - name: Push Docker Image To AWS ECR
+        if: success()
+        run: |
+          docker push 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
+
+
