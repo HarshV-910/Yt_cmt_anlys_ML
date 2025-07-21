@@ -186,14 +186,20 @@ def generate_trend_graph():
         return jsonify({"error": str(e)}), 500
 
 
-GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
-# GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
+# GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
+GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 genai.configure(api_key=GENAI_API_KEY)
 @app.route("/summarize_video", methods=["POST"])
 def summarize_video():
     try:
         video_id = request.json.get("video_id")
+        print("\n\n\nGENAI_API_KEY: ", GENAI_API_KEY, "\nvideo_id: ", video_id,"\n\n\n")
+        if not video_id:
+            return jsonify({"error": "video_id is required"}), 400
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        if not transcript:
+            return jsonify({"error": "transcript not fetching"}), 400
         full_text = " ".join([line['text'] for line in transcript])
         prompt = f'Summarize this youtube video transcript and also give result with punctuations \ntext = "{full_text}."'
 
@@ -222,6 +228,11 @@ def clean_text(text: str) -> str:
     except Exception as e:
         logger.error(f"Error processing text: {e}")
         return ""
+
+@app.route("/health")
+def health():
+    return "OK", 200
+
 
 @app.route('/generate_wordcloud', methods=['POST'])
 def wordcloud():
