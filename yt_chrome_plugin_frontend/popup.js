@@ -173,7 +173,7 @@ window.analysisStartTime = performance.now();
       });
     });
 
-        document.getElementById("btn-summary").addEventListener("click", async () => {
+    document.getElementById("btn-summary").addEventListener("click", async () => {
       toggleSection("video-summary", () => {
         const div = document.createElement("div");
         div.textContent = "Summarizing... Please wait.";
