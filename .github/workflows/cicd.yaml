@@ -111,20 +111,67 @@ jobs:
       #   run: |
       #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
 
-      - name: Start Flask app
-        env: 
+      # - name: Start Flask app
+      #   env: 
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: eu-north-1
+      #     PYTHONPATH: .
+      #     GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      #   run: |
+      #     nohup python3 flask_app/app.py &
+      #     sleep 50
+
+      # - name: Run API Testing
+      #   run: |
+      #     pytest tests/test_APIs.py --disable-warnings -v
+      - name: Start Flask app with Gunicorn
+        env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-north-1
           PYTHONPATH: .
+          # IMPORTANT: Add your Gemini API Key as a GitHub Secret
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          nohup python3 flask_app/app.py &
-          sleep 50
+          # Install curl if not already present (should be on ubuntu-latest)
+          sudo apt-get update && sudo apt-get install -y curl
+
+          # Start the Flask app with Gunicorn in the background
+          # Redirect stdout/stderr to a log file
+          nohup gunicorn flask_app.app:app -c gunicorn_config.py -b 0.0.0.0:5000 > flask_app.log 2>&1 &
+
+          # Wait for the Flask app to be ready
+          echo "Waiting for Flask app to start..."
+          for i in $(seq 1 60); do # Increased wait time to 60 seconds for robustness
+            if curl -s http://localhost:5000/ > /dev/null; then # Redirect curl output to null
+              echo "Flask app is up!"
+              break
+            fi
+            echo "Still waiting... ($i/60)"
+            sleep 1
+          done
+
+          # Fail the step if the app didn't start
+          if ! curl -s http://localhost:5000/ > /dev/null; then
+            echo "Flask app failed to start within the expected time. Showing logs:"
+            cat flask_app.log # Print logs if app didn't start
+            exit 1
+          fi
 
       - name: Run API Testing
+        # This step will only run if the 'Start Flask app' step succeeded
+        # If test_APIs.py fails, we need to inspect the Flask app logs *again*
         run: |
           pytest tests/test_APIs.py --disable-warnings -v
+        # Add a step that always runs to show logs if API testing fails
+        # This will run even if `pytest` exits with an error
+        # 'if: always()' ensures it runs regardless of previous step status
+      - name: Show Flask App Logs on API Test Failure
+        if: failure() # Only run this step if a previous step failed
+        run: |
+          echo "API tests failed. Displaying Flask app logs for debugging:"
+          cat flask_app.log || echo "Flask app log file not found." # Print the log file
     # ------------------------------------
     # Dockerization
       - name: Login to AWS ECR
