@@ -186,13 +186,13 @@ def generate_trend_graph():
         return jsonify({"error": str(e)}), 500
 
 
-GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
 # GEMINII_API_KEY = os.getenv("GEMINI_API_KEY")
 
-genai.configure(api_key=GEMINI_API_KEY)
 @app.route("/summarize_video", methods=["POST"])
 def summarize_video():
     try:
+        GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
+        genai.configure(api_key=GEMINI_API_KEY)
         video_id = request.json.get("video_id")
         print("\n\n\nGEMINI_API_KEY: ", GEMINI_API_KEY, "\nvideo_id: ", video_id,"\n\n\n")
         if not video_id:
