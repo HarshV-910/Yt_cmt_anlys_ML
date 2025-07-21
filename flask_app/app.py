@@ -189,26 +189,104 @@ def generate_trend_graph():
 # GENAI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
 GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GENAI_API_KEY)
+logger.debug("Attempting to load GEMINI_API_KEY...")
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
-@app.route("/summarize_video", methods=["POST"])
-def summarize_video():
+if not gemini_api_key:
+    logger.critical("!!!!!!! FATAL: GEMINI_API_KEY environment variable is NOT SET !!!!!!!")
+    logger.critical("!!!!!!! This is likely the cause of the 500 error !!!!!!!")
+    # You might even want to exit here in CI to make the error clearer if it's essential
+    # sys.exit(1) # Uncomment this to crash the app immediately if key is missing
+else:
+    logger.info("GEMINI_API_KEY successfully loaded (first 5 chars): %s", gemini_api_key[:5])
+    # Try to configure Gemini immediately to catch config errors
+    import google.generativeai as genai
     try:
-        video_id = request.json.get("video_id")
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        full_text = " ".join([line['text'] for line in transcript])
-        prompt = f'Summarize this youtube video transcript and also give result with punctuations \ntext = "{full_text}."'
-
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=prompt
-        )
-
-        response = model.generate_content("now give summary of this video transcript")
-        return jsonify({"summary": response.text})
-
+        genai.configure(api_key=gemini_api_key)
+        logger.info("Gemini API client configured successfully at app startup.")
     except Exception as e:
-        logger.error(f"Summary generation failed: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.critical("FATAL: Failed to configure Gemini API client during startup!")
+        logger.exception(e) # Print full traceback
+        sys.exit(1) # Crash if Gemini client cannot be configured
+
+# Load your LightGBM model and vectorizer here
+# Ensure these are loaded ONCE when the app starts, not per request
+try:
+    # Example placeholders, adjust to your actual loading paths and methods
+    import joblib
+    # from your_src_module import LabelEncoder
+    
+    # Assuming the paths are correct relative to /app
+    # Note: The 'version None' warning might be related to how you save/load these models
+    # but it's likely secondary to the 500 error for Gemini
+    # Ensure your paths are correct, e.g., if model is in 'models/lightGBM_model_v2.pkl'
+    # lightgbm_model = joblib.load('/app/models/lightGBM_model_v2.pkl')
+    # tfidf_vectorizer = joblib.load('/app/models/vectorizers/tfidf3gram_vectorizer.pkl')
+    logger.info("Machine learning models (LightGBM, TF-IDF) loaded successfully.")
+except Exception as e:
+    logger.critical("FATAL: Error loading ML models at app startup!")
+    logger.exception(e) # Print full traceback
+    sys.exit(1) # Crash if models can't be loaded
+
+@app.route('/gemini', methods=['POST'])
+def gemini_summary():
+    logger.debug("Received request to /gemini endpoint.")
+    data = request.json
+    video_id = data.get('video_id')
+
+    if not video_id:
+        logger.warning("Received /gemini request with missing video_id.")
+        return jsonify({"error": "Missing video_id"}), 400
+
+    try:
+        logger.info("Attempting to get YouTube transcript for video_id: %s", video_id)
+        # Import youtube_transcript_api here if not already imported globally
+        from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
+
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript = transcript_list.find_transcript(['en', 'en-US'])
+        full_transcript = " ".join([d['text'] for d in transcript.fetch()])
+        logger.info("Successfully fetched YouTube transcript for video_id: %s", video_id)
+
+        logger.info("Attempting to generate Gemini summary for video_id: %s", video_id)
+        model = genai.GenerativeModel('gemini-pro') # Re-initialize if necessary, but configure should be enough
+        prompt = f"Summarize the following YouTube video transcript:\n\n{full_transcript}"
+        response = model.generate_content(prompt)
+        summary = response.text
+        logger.info("Successfully generated Gemini summary for video_id: %s", video_id)
+
+        return jsonify({"video_id": video_id, "summary": summary}), 200
+
+    except NoTranscriptFound:
+        logger.warning("No transcript found for video_id: %s", video_id)
+        return jsonify({"error": "No transcript found for this video."}), 404
+    except TranscriptsDisabled:
+        logger.warning("Transcripts are disabled for video_id: %s", video_id)
+        return jsonify({"error": "Transcripts are disabled for this video."}), 403
+    except Exception as e:
+        # This is the crucial part: log the full traceback for ANY other exception
+        logger.critical("!!! UNHANDLED EXCEPTION in /gemini endpoint for video_id: %s !!!", video_id)
+        logger.exception("Full traceback:") # This is key: it prints the stack trace
+        return jsonify({"error": "Internal server error: " + str(e)}), 500
+# @app.route("/summarize_video", methods=["POST"])
+# def summarize_video():
+#     try:
+#         video_id = request.json.get("video_id")
+#         transcript = YouTubeTranscriptApi.get_transcript(video_id)
+#         full_text = " ".join([line['text'] for line in transcript])
+#         prompt = f'Summarize this youtube video transcript and also give result with punctuations \ntext = "{full_text}."'
+
+#         model = genai.GenerativeModel(
+#             model_name="gemini-2.0-flash",
+#             system_instruction=prompt
+#         )
+
+#         response = model.generate_content("now give summary of this video transcript")
+#         return jsonify({"summary": response.text})
+
+#     except Exception as e:
+#         logger.error(f"Summary generation failed: {e}")
+#         return jsonify({"error": str(e)}), 500
 
 def clean_text(text: str) -> str:
     try:
