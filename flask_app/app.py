@@ -206,8 +206,6 @@ logger = logging.getLogger(__name__)
 
 from flask import Flask, request, jsonify # Import Flask here
 
-app = Flask(__name__) # Initialize Flask app
-
 # --- IMMEDIATE CHECK FOR GEMINI_API_KEY ON APP STARTUP ---
 # This will log even before any request comes in
 logger.debug("Attempting to load GEMINI_API_KEY...")
