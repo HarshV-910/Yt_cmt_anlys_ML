@@ -187,6 +187,8 @@ def generate_trend_graph():
 
 
 # GEMINII_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
+genai.configure(api_key=GEMINI_API_KEY)
 
 @app.route("/summarize_video", methods=["POST"])
 def summarize_video():
