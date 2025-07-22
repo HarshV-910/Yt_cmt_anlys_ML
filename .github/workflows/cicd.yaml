@@ -111,24 +111,24 @@ jobs:
       #   run: |
       #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
 
-      # - name: Start Flask app
-      #   env: 
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_DEFAULT_REGION: eu-north-1
-      #     PYTHONPATH: .
-      #     GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
-      #     # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      #   run: |
-      #     nohup python3 flask_app/app.py > flask.log 2>&1 &
-      #     for i in {1..20}; do
-      #       if curl -s http://localhost:5000/health; then
-      #         echo "Flask is up!"
-      #         break
-      #       fi
-      #       echo "Waiting for Flask..."
-      #       sleep 3
-      #     done
+      - name: Start Flask app
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-north-1
+          PYTHONPATH: .
+          GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
+          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          nohup python3 flask_app/app.py > flask.log 2>&1 &
+          for i in {1..20}; do
+            if curl -s http://localhost:5000/health; then
+              echo "Flask is up!"
+              break
+            fi
+            echo "Waiting for Flask..."
+            sleep 3
+          done
 
       # - name: Run API Testing
       #   run: |
@@ -164,5 +164,31 @@ jobs:
         if: success()
         run: |
           docker push 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
+
+      - name: Zip files for deployment
+        if: success()
+        run: |
+          zip -r deployment.zip appspec.yaml deploy/scripts/install_dependencies.sh deploy/scripts/start_docker.sh
+
+      - name: Upload zip to S3
+        if: success()
+        run: |
+          aws s3 cp deployment.zip s3://yt-deployment-bkt/deployment.zip
+
+      - name: Deploy to AWS CodeDeploy
+        if: success()
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws deploy create-deployment \
+          --application-name yt_plugin_app \
+          --deployment-config-name CodeDeployDefault.OneAtATime \
+          --deployment-group-name yt_deployment_grp \
+          --s3-location bucket=yt-deployment-bkt,key=deployment.zip,bundleType=zip \
+          --file-exists-behavior OVERWRITE \
+          --region eu-north-1
+
+
+
 
 

@@ -4,7 +4,7 @@ import requests
 
 # Replace with actual endpoints if deployed externally
 FLASK_API_URL = "http://localhost:5000/predict"
-# GEMINI_API_URL = "http://localhost:5000/summarize_video"
+GEMINI_API_URL = "http://localhost:5000/summarize_video"
 
 def test_flask_api():
     payload = {
@@ -31,7 +31,6 @@ def test_flask_api():
         assert "sentiment" in item
 
 
-GEMINI_API_URL = "http://localhost:5000/summarize_video"
 
 def test_gemini_api():
     payload = {"video_id": "VJgdOMXhEj0"}  # Valid video with transcript
