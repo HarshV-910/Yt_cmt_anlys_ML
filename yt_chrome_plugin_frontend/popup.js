@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const API_KEY = "AIzaSyAgmJrE8oqan69HPqizGgjoxWL_oERDA-k";
   const API_BASE = "http://localhost:5000";
+  // const API_BASE = "http://yt-elb-1-2106271387.eu-north-1.elb.amazonaws.com:80";
   const videoIdDiv = document.getElementById("video-id");
 
   const metricTotal = document.querySelector("#metric-total .metric-value");
