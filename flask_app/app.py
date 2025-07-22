@@ -230,6 +230,10 @@ def clean_text(text: str) -> str:
 def health():
     return "OK", 200
 
+@app.route("/")
+def home():
+    return "Welcome to flask api"
+
 
 @app.route('/generate_wordcloud', methods=['POST'])
 def wordcloud():

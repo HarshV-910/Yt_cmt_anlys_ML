@@ -130,15 +130,15 @@ jobs:
             sleep 3
           done
 
-      # - name: Run API Testing
-      #   run: |
-      #     pytest tests/test_APIs.py 
+      - name: Run API Testing
+        run: |
+          pytest tests/test_APIs.py 
 
-      # - name: Print Flask log (on test failure)
-      #   if: failure()
-      #   run: |
-      #     echo "---------- Flask Log ----------"
-      #     cat flask.log || echo "No flask.log found"
+      - name: Print Flask log (on test failure)
+        if: failure()
+        run: |
+          echo "---------- Flask Log ----------"
+          cat flask.log || echo "No flask.log found"
 
 
     # ------------------------------------

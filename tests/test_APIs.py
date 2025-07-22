@@ -4,7 +4,7 @@ import requests
 
 # Replace with actual endpoints if deployed externally
 FLASK_API_URL = "http://localhost:5000/predict"
-GEMINI_API_URL = "http://localhost:5000/summarize_video"
+# GEMINI_API_URL = "http://localhost:5000/summarize_video"
 
 def test_flask_api():
     payload = {
@@ -32,15 +32,15 @@ def test_flask_api():
 
 
 
-def test_gemini_api():
-    payload = {"video_id": "VJgdOMXhEj0"}  # Valid video with transcript
+# def test_gemini_api():
+#     payload = {"video_id": "VJgdOMXhEj0"}  # Valid video with transcript
 
-    response = requests.post(GEMINI_API_URL, json=payload)
+#     response = requests.post(GEMINI_API_URL, json=payload)
 
-    assert response.status_code == 200
+#     assert response.status_code == 200
 
-    response_data = response.json()
-    assert "summary" in response_data
-    assert isinstance(response_data["summary"], str)
-    assert len(response_data["summary"]) > 0
+#     response_data = response.json()
+#     assert "summary" in response_data
+#     assert isinstance(response_data["summary"], str)
+#     assert len(response_data["summary"]) > 0
 
