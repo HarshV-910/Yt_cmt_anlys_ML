@@ -1,4 +1,4 @@
-#！/bin/bash
+#!/bin/bash
 # Ensure the script runs in non-interactive mode
 export DEBIAN_FRONTEND=noninteractive
 
