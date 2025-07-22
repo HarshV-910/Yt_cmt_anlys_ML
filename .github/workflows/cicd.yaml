@@ -173,7 +173,7 @@ jobs:
       - name: Upload zip to S3
         if: success()
         run: |
-          aws s3 cp deployment.zip s3://yt-deployment-bkt/deployment.zip
+          aws s3 cp deployment.zip s3://yt-deployment-bckt/deployment.zip
 
       - name: Deploy to AWS CodeDeploy
         if: success()
@@ -184,7 +184,7 @@ jobs:
           --application-name yt_plugin_app \
           --deployment-config-name CodeDeployDefault.OneAtATime \
           --deployment-group-name yt_deployment_grp \
-          --s3-location bucket=yt-deployment-bkt,key=deployment.zip,bundleType=zip \
+          --s3-location bucket=yt-deployment-bckt,key=deployment.zip,bundleType=zip \
           --file-exists-behavior OVERWRITE \
           --region eu-north-1
 
