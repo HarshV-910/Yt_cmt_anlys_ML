@@ -168,7 +168,7 @@ jobs:
       - name: Zip files for deployment
         if: success()
         run: |
-          zip -r deployment.zip appspec.yml deploy/scripts/install_dependencies.sh deploy/scripts/start_docker.sh
+          zip -r deployment.zip appspec.yml deploy
 
       - name: Upload zip to S3
         if: success()
@@ -187,8 +187,4 @@ jobs:
           --s3-location bucket=yt-deployment-bckt,key=deployment.zip,bundleType=zip \
           --file-exists-behavior OVERWRITE \
           --region eu-north-1
-
-
-
-
 
