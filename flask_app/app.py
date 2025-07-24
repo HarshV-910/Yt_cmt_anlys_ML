@@ -20,12 +20,15 @@ import random
 from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
 from src.config.mlflow_config import setup_mlflow
+from flask_cors import CORS
 setup_mlflow()
+
 
 # -----------------------------------------------------------------------------
 # Flask App Initialization
 # -----------------------------------------------------------------------------
 app = Flask(__name__)
+CORS(app)
 
 # -----------------------------------------------------------------------------
 # Logging Configuration
