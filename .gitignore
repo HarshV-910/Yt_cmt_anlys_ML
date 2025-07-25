@@ -1,7 +1,7 @@
 yt_env/
 models/
 yt_chrome_plugin_frontend/temp1.py
-# yt_chrome_plugin_frontend/secrets.js
+yt_chrome_plugin_frontend/secrets.js
 
 
 # Byte-compiled / optimized / DLL files

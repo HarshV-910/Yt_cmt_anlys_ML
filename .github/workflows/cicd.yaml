@@ -1,189 +1,189 @@
-name: CICD Pipeline
-on: push
-jobs:
-  model-deployment:
-    runs-on: ${{ matrix.os }}
+# name: CICD Pipeline
+# on: push
+# jobs:
+#   model-deployment:
+#     runs-on: ${{ matrix.os }}
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest] # windows-latest, macos-latest
-        version: ['3.10']
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest] # windows-latest, macos-latest
+#         version: ['3.10']
 
-    steps:
-    # basic setup of environment
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#     # basic setup of environment
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: setup-python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.version }}
+#       - name: setup-python
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: ${{ matrix.version }}
 
-      # # for multiple python version
-      # - name: Cache pip dependencies
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ~/.cache/pip
-      #     key: ${{ runner.os }}-pip-${{ matrix.version }}-${{ hashFiles('**/requirements.txt') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-pip-${{ matrix.version }}-
+#       # # for multiple python version
+#       # - name: Cache pip dependencies
+#       #   uses: actions/cache@v4
+#       #   with:
+#       #     path: ~/.cache/pip
+#       #     key: ${{ runner.os }}-pip-${{ matrix.version }}-${{ hashFiles('**/requirements.txt') }}
+#       #     restore-keys: |
+#       #       ${{ runner.os }}-pip-${{ matrix.version }}-
       
-      # for single python version
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+#       # for single python version
+#       - name: Cache pip dependencies
+#         uses: actions/cache@v3
+#         with:
+#           path: ~/.cache/pip
+#           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+#           restore-keys: |
+#             ${{ runner.os }}-pip-
 
-      - name: install requirements
-        run: |
-          pip install -r requirements.txt
-      # ----------------------------------------
+#       - name: install requirements
+#         run: |
+#           pip install -r requirements.txt
+#       # ----------------------------------------
 
-      # for DVC
-      - name: run pipeline
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-north-1
-        run: |
-          dvc repro
-      # -----------------------------
+#       # for DVC
+#       - name: run pipeline
+#         env: 
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           AWS_DEFAULT_REGION: eu-north-1
+#         run: |
+#           dvc repro
+#       # -----------------------------
 
-      # Github Bot for dvc & git push 
-      - name: DVC data Push to remote
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-north-1
-        run: |
-          dvc push
+#       # Github Bot for dvc & git push 
+#       - name: DVC data Push to remote
+#         env: 
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           AWS_DEFAULT_REGION: eu-north-1
+#         run: |
+#           dvc push
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+#       - name: Configure Git
+#         run: |
+#           git config --global user.name "github-actions[bot]"
+#           git config --global user.email "github-actions[bot]@users.noreply.github.com"
       
-      - name: Add changes to Git
-        run: |
-          git add .
-      - name: Commit changes
-        if: ${{ github.actor != 'github-actions[bot]' }}
-        run: |
-          git commit -m "Automated commit of DVC outputs and updated code" || echo "No changes to commit"
-      - name: Push changes
-        if: ${{ github.actor != 'github-actions[bot]' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git push origin ${{ github.ref_name }}
-        # -----------------------------
+#       - name: Add changes to Git
+#         run: |
+#           git add .
+#       - name: Commit changes
+#         if: ${{ github.actor != 'github-actions[bot]' }}
+#         run: |
+#           git commit -m "Automated commit of DVC outputs and updated code" || echo "No changes to commit"
+#       - name: Push changes
+#         if: ${{ github.actor != 'github-actions[bot]' }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           git push origin ${{ github.ref_name }}
+#         # -----------------------------
 
-      # for Testing
-      - name: Install Test Dependencies
-        run: |
-          pip install pytest
+#       # for Testing
+#       - name: Install Test Dependencies
+#         run: |
+#           pip install pytest
 
-      - name: Run Model Loading Test
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-north-1
-        run: |
-          PYTHONPATH=. pytest tests/test_model.py --disable-warnings -v
+#       - name: Run Model Loading Test
+#         env: 
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           AWS_DEFAULT_REGION: eu-north-1
+#         run: |
+#           PYTHONPATH=. pytest tests/test_model.py --disable-warnings -v
 
-      - name: Run Model Signature Test
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-north-1
-        run: |
-          PYTHONPATH=. pytest tests/test_model_signature.py --disable-warnings -v
+#       - name: Run Model Signature Test
+#         env: 
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           AWS_DEFAULT_REGION: eu-north-1
+#         run: |
+#           PYTHONPATH=. pytest tests/test_model_signature.py --disable-warnings -v
 
-      # - name: Run Model Performance Test
-      #   if: success() # Only run if previous steps were successful
-      #   env: 
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_DEFAULT_REGION: eu-north-1
-      #   run: |
-      #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
+#       # - name: Run Model Performance Test
+#       #   if: success() # Only run if previous steps were successful
+#       #   env: 
+#       #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#       #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#       #     AWS_DEFAULT_REGION: eu-north-1
+#       #   run: |
+#       #     PYTHONPATH=. pytest tests/test_performance.py --disable-warnings -v
 
-      - name: Start Flask app
-        env: 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-north-1
-          PYTHONPATH: .
-          GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
-          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          nohup python3 flask_app/app.py > flask.log 2>&1 &
-          for i in {1..20}; do
-            if curl -s http://localhost:5000/health; then
-              echo "Flask is up!"
-              break
-            fi
-            echo "Waiting for Flask..."
-            sleep 3
-          done
+#       - name: Start Flask app
+#         env: 
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           AWS_DEFAULT_REGION: eu-north-1
+#           PYTHONPATH: .
+#           GEMINI_API_KEY: "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"
+#           # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+#         run: |
+#           nohup python3 flask_app/app.py > flask.log 2>&1 &
+#           for i in {1..20}; do
+#             if curl -s http://localhost:5000/health; then
+#               echo "Flask is up!"
+#               break
+#             fi
+#             echo "Waiting for Flask..."
+#             sleep 3
+#           done
 
-      - name: Run API Testing
-        run: |
-          pytest tests/test_APIs.py 
+#       - name: Run API Testing
+#         run: |
+#           pytest tests/test_APIs.py 
 
-      - name: Print Flask log (on test failure)
-        if: failure()
-        run: |
-          echo "---------- Flask Log ----------"
-          cat flask.log || echo "No flask.log found"
+#       - name: Print Flask log (on test failure)
+#         if: failure()
+#         run: |
+#           echo "---------- Flask Log ----------"
+#           cat flask.log || echo "No flask.log found"
 
 
-    # ------------------------------------
-    # Dockerization
-      - name: Login to AWS ECR
-        if: success()
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 252312374343.dkr.ecr.eu-north-1.amazonaws.com
+#     # ------------------------------------
+#     # Dockerization
+#       - name: Login to AWS ECR
+#         if: success()
+#         run: |
+#           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 252312374343.dkr.ecr.eu-north-1.amazonaws.com
 
-      - name: Build Docker Image
-        if: success()
-        run: |
-          docker build -t yt-plugin-ecr .
+#       - name: Build Docker Image
+#         if: success()
+#         run: |
+#           docker build -t yt-plugin-ecr .
 
-      - name: Tag Docker Image
-        if: success()
-        run: |
-          docker tag yt-plugin-ecr:latest 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
+#       - name: Tag Docker Image
+#         if: success()
+#         run: |
+#           docker tag yt-plugin-ecr:latest 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
       
-      - name: Push Docker Image To AWS ECR
-        if: success()
-        run: |
-          docker push 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
+#       - name: Push Docker Image To AWS ECR
+#         if: success()
+#         run: |
+#           docker push 252312374343.dkr.ecr.eu-north-1.amazonaws.com/yt-plugin-ecr:latest
 
-      - name: Zip files for deployment
-        if: success()
-        run: |
-          zip -r deployment.zip appspec.yml deploy/scripts/install_dependencies.sh deploy/scripts/start_docker.sh
+#       - name: Zip files for deployment
+#         if: success()
+#         run: |
+#           zip -r deployment.zip appspec.yml deploy/scripts/install_dependencies.sh deploy/scripts/start_docker.sh
 
-      - name: Upload zip to S3
-        if: success()
-        run: |
-          aws s3 cp deployment.zip s3://yt-deployment-bckt/deployment.zip --region eu-north-1
+#       - name: Upload zip to S3
+#         if: success()
+#         run: |
+#           aws s3 cp deployment.zip s3://yt-deployment-bckt/deployment.zip --region eu-north-1
 
-      - name: Deploy to AWS CodeDeploy
-        if: success()
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws deploy create-deployment \
-          --application-name temp \
-          --deployment-config-name CodeDeployDefault.OneAtATime \
-          --deployment-group-name temp \
-          --s3-location bucket=yt-deployment-bckt,key=deployment.zip,bundleType=zip \
-          --file-exists-behavior OVERWRITE \
-          --region eu-north-1
+#       - name: Deploy to AWS CodeDeploy
+#         if: success()
+#         run: |
+#           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws deploy create-deployment \
+#           --application-name temp \
+#           --deployment-config-name CodeDeployDefault.OneAtATime \
+#           --deployment-group-name temp \
+#           --s3-location bucket=yt-deployment-bckt,key=deployment.zip,bundleType=zip \
+#           --file-exists-behavior OVERWRITE \
+#           --region eu-north-1
