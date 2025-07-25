@@ -19,9 +19,10 @@ import uuid
 import random
 from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
-from src.config.mlflow_config import setup_mlflow
+from src.config.mlflow_config import setup_mlflow, setup_gemini
 from flask_cors import CORS
 setup_mlflow()
+gemini_api_key = setup_gemini()
 
 
 # -----------------------------------------------------------------------------
@@ -101,84 +102,27 @@ def preprocess_text(text: str) -> str:
     cleaned_text = ' '.join(lemmatized) 
     return cleaned_text
 
-# @app.route('/predict', methods=['POST'])
-# def predict():
-#     """Endpoint to predict sentiment of a comment."""
-#     data = request.get_json()
-#     if 'comments' not in data:
-#         return jsonify({'error': 'No comment provided'}), 400
-
-#     comments = data.get('comments')
-#     cleaned_comments = [preprocess_text(comment) for comment in comments]
-#     transformed_comments = vectorizer.transform(cleaned_comments)
-#     try:
-#         feature_names = vectorizer.get_feature_names_out()
-#     except AttributeError:
-#         num_features = transformed_comments.shape[1]
-#         feature_names = [str(i) for i in range(num_features)]
-#     df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
-
-#     prediction = model.predict(df_transformed_comments).tolist()
-
-#     response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
-#     return jsonify(response)
-
-# @app.route('/predict', methods=['POST'])
-# def predict():
-#     try:
-#         data = request.get_json(force=True)  # try force=True if content-type might be missing
-#         if not data or 'comments' not in data:
-#             return jsonify({'error': 'No comment provided'}), 400
-
-#         comments = data['comments']
-#         if isinstance(comments, str):
-#             comments = [comments]  # Convert to list if single comment
-        
-#         cleaned_comments = [preprocess_text(comment) for comment in comments]
-#         transformed_comments = vectorizer.transform(cleaned_comments)
-
-#         try:
-#             feature_names = vectorizer.get_feature_names_out()
-#         except AttributeError:
-#             num_features = transformed_comments.shape[1]
-#             feature_names = [str(i) for i in range(num_features)]
-
-#         df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
-#         prediction = model.predict(df_transformed_comments).tolist()
-
-#         response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
-#         return jsonify(response)
-
-#     except Exception as e:
-#         logger.error(f"Prediction failed: {e}")
-#         traceback.print_exc()
-#         return jsonify({"error": str(e)}), 500
 @app.route('/predict', methods=['POST'])
 def predict():
+    """Endpoint to predict sentiment of a comment."""
+    data = request.get_json()
+    if 'comments' not in data:
+        return jsonify({'error': 'No comment provided'}), 400
+
+    comments = data.get('comments')
+    cleaned_comments = [preprocess_text(comment) for comment in comments]
+    transformed_comments = vectorizer.transform(cleaned_comments)
     try:
-        data = request.get_json(force=True)
-        if not data or 'comments' not in data:
-            return jsonify({'error': 'Missing "comments" field in JSON'}), 400
+        feature_names = vectorizer.get_feature_names_out()
+    except AttributeError:
+        num_features = transformed_comments.shape[1]
+        feature_names = [str(i) for i in range(num_features)]
+    df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
 
-        comments = data['comments']
-        if isinstance(comments, str):
-            comments = [comments]  # Convert single comment to list
-        elif not isinstance(comments, list):
-            return jsonify({'error': '"comments" should be a string or a list of strings'}), 400
+    prediction = model.predict(df_transformed_comments).tolist()
 
-        cleaned = [preprocess_text(comment) for comment in comments]
-        transformed = vectorizer.transform(cleaned)
-        predictions = model.predict(pd.DataFrame(transformed.toarray(),columns=vectorizer.get_feature_names_out())).tolist()
-
-        result = [
-            {"comment": original, "sentiment": pred}
-            for original, pred in zip(comments, predictions)
-        ]
-        return jsonify(result)
-
-    except Exception as e:
-        logger.exception("Prediction failed")
-        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+    response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
+    return jsonify(response)
 
 
 @app.route('/generate_chart', methods=['POST'])
@@ -248,9 +192,7 @@ def generate_trend_graph():
         return jsonify({"error": str(e)}), 500
 
 
-GEMINI_API_KEY = "AIzaSyDStfTRZ2MuOXzH-00_21KegNppcMVmcJc"  # Replace with your key
-# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key=gemini_api_key)
 
 @app.route("/summarize_video", methods=["POST"])
 def summarize_video():
