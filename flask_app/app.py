@@ -101,27 +101,59 @@ def preprocess_text(text: str) -> str:
     cleaned_text = ' '.join(lemmatized) 
     return cleaned_text
 
+# @app.route('/predict', methods=['POST'])
+# def predict():
+#     """Endpoint to predict sentiment of a comment."""
+#     data = request.get_json()
+#     if 'comments' not in data:
+#         return jsonify({'error': 'No comment provided'}), 400
+
+#     comments = data.get('comments')
+#     cleaned_comments = [preprocess_text(comment) for comment in comments]
+#     transformed_comments = vectorizer.transform(cleaned_comments)
+#     try:
+#         feature_names = vectorizer.get_feature_names_out()
+#     except AttributeError:
+#         num_features = transformed_comments.shape[1]
+#         feature_names = [str(i) for i in range(num_features)]
+#     df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
+
+#     prediction = model.predict(df_transformed_comments).tolist()
+
+#     response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
+#     return jsonify(response)
+
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Endpoint to predict sentiment of a comment."""
-    data = request.get_json()
-    if 'comments' not in data:
-        return jsonify({'error': 'No comment provided'}), 400
-
-    comments = data.get('comments')
-    cleaned_comments = [preprocess_text(comment) for comment in comments]
-    transformed_comments = vectorizer.transform(cleaned_comments)
     try:
-        feature_names = vectorizer.get_feature_names_out()
-    except AttributeError:
-        num_features = transformed_comments.shape[1]
-        feature_names = [str(i) for i in range(num_features)]
-    df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
+        data = request.get_json(force=True)  # try force=True if content-type might be missing
+        if not data or 'comments' not in data:
+            return jsonify({'error': 'No comment provided'}), 400
 
-    prediction = model.predict(df_transformed_comments).tolist()
+        comments = data['comments']
+        if isinstance(comments, str):
+            comments = [comments]  # Convert to list if single comment
+        
+        cleaned_comments = [preprocess_text(comment) for comment in comments]
+        transformed_comments = vectorizer.transform(cleaned_comments)
 
-    response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
-    return jsonify(response)
+        try:
+            feature_names = vectorizer.get_feature_names_out()
+        except AttributeError:
+            num_features = transformed_comments.shape[1]
+            feature_names = [str(i) for i in range(num_features)]
+
+        df_transformed_comments = pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
+        prediction = model.predict(df_transformed_comments).tolist()
+
+        response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, prediction)]
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error(f"Prediction failed: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/generate_chart', methods=['POST'])
 def generate_chart():

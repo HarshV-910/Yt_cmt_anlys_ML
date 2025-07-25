@@ -4,7 +4,10 @@
   "version": "1.0",
   "description": "Analyze sentiment of YouTube comments using ML",
   "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["http://localhost:5000/"],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "http://yt-elb-1-600478250.eu-north-1.elb.amazonaws.com/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Analyze Sentiment"
