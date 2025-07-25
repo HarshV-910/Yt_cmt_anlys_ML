@@ -6,7 +6,7 @@
   "permissions": ["activeTab", "scripting"],
   "host_permissions": [
     "http://localhost:5000/*",
-    "http://yt-elb-1494008770.eu-north-1.elb.amazonaws.com/*"
+    "http://yt-lb-2-76223696.eu-north-1.elb.amazonaws.com/*"
   ],
   "action": {
     "default_popup": "popup.html",

@@ -16,6 +16,7 @@ boto3==1.38.27
 awscli~=1.40.0 # use this version to avoid conflicts with other packages
 botocore==1.38.27
 lightgbm==4.6.0
+flask-cors
 
 google-generativeai==0.8.5
 python-dotenv==0.9.0 
